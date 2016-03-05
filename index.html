@@ -51,7 +51,7 @@ footer {
 .button {
     height: 100%;
     display: inline-block;
-    width: 250px;
+    width: 200px;
     text-align: center;
     cursor: pointer;
     padding: 2px;
@@ -72,15 +72,16 @@ footer {
 <body>
     <div id="controls">
         <div id="layout" class="button noselect" title="Graph layout methods"></div>
+        <div id="pin" class="button noselect" title="Pins your current source node"></div>
         <div id="dv_mode" class="button noselect" title="Delta-V aerobraking assumptions"></div>
         <div id="aero_dv" class="button noselect" title="Assumed minimum delta v needed for any aerobraking manouvre"></div>
         <div id="plane_change" class="button noselect" title="Plane changes align your vessel with the planet rotation, but is often expensive"></div>
     </div>
     <div id="graph"></div>
     <div id="outputs">
-        <div id="output_out" class="output"></div>
+        <div id="output_out" class="output">select a node to calculate dv</div>
         <div id="output_back" class="output"></div>
-        <div id="output_total" class="output">select two nodes to calculate dv</div>
+        <div id="output_total" class="output"></div>
     </div>
 </body>
 <footer>

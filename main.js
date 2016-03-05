@@ -4,6 +4,7 @@ $(document).ready(function(){
 
 const AEROBRAKE = false
 const DV_MATCH = null
+const DEFAULT_NODE_SELECTOR = '#kerbin_surface'
 
 // some modes for aero calculations
 var AERO_MODES = [
@@ -21,6 +22,7 @@ var PLANE_CHANGE = true
 
 // our start and end points
 var node_pair = []
+var pinned = null
 
 // planet colours
 const DEFAULT_COLOUR = '#333'
@@ -240,6 +242,10 @@ function on_tap_handler(cy, evt){
     if (!node) {return}
     cy.nodes().unselect()
     cy.edges().unselect()
+    if (pinned){
+        node_pair = []
+        node_pair.push(pinned)
+    }
     node_pair.push(node)
     if (node_pair.length < 2){
         return
@@ -251,7 +257,64 @@ function on_tap_handler(cy, evt){
     search_and_render(cy)
 }
 
+function init_buttons(CY){
+    $('#layout').click(function(){
+        // iterates the layouts
+        LAYOUT = (LAYOUT + 1) % LAYOUTS.length
+        $('#layout').text('Layout: ' + LAYOUTS[LAYOUT])
+        CY.layout(LAYOUT_SETTINGS[LAYOUTS[LAYOUT]])
+        // too cluttered with edges
+        CY.edges().style({opacity:LAYOUTS[LAYOUT] == 'round' ? 0.2 : 1})
+    })
+      
+    $('#dv_mode').click(function(){
+        // iterates the aero mode
+        AERO_MODE = (AERO_MODE + 1) % AERO_MODES.length
+        $('#dv_mode').text('Aero braking: ' + AERO_MODES[AERO_MODE].friendly).prop('title',  AERO_MODES[AERO_MODE].title)
+        search_and_render(CY)
+    })
+    
+    $('#aero_dv').click(function(){
+        // iterates the aero dv assumption
+        AEROBRAKE_DV = (AEROBRAKE_DV + 1) % AEROBRAKE_DVS.length
+        $('#aero_dv').text('Min. braking dv: ' + AEROBRAKE_DVS[AEROBRAKE_DV])
+        search_and_render(CY)
+    })
+    
+    $('#plane_change').click(function(){
+        // iterates the plane change dv inclusion
+        PLANE_CHANGE = !PLANE_CHANGE
+        $('#plane_change').text('Plane changes: ' + (PLANE_CHANGE ? 'all' : 'none'))
+        search_and_render(CY)
+    })
+    
+    $('#pin').click(function(){
+        // pins a node
+        if (pinned){
+            pinned = null
+        } else {
+            pinned = node_pair[0]
+        }
+        $('#pin').text('Pinned: ' + (pinned ? pinned.data('label') : 'none'))
+    })
+    
+    $('#pin').click()
+    $('#aero_dv').click()
+    $('#dv_mode').click()
+    $('#plane_change').click()
+    $('#layout').click()
+}
+
 function init(){
+    CY = cytoscape({
+        container: $('#graph'),
+        elements: get_data(),
+        selectionType: 'additive',
+        autoungrabify: true,
+        wheelSensitivity: 0.15,
+    })
+    CY.on('tap', 'node', function(e) {on_tap_handler(CY,e)})
+
     var style = cytoscape.stylesheet()
         .selector('node')
             .style({
@@ -286,18 +349,9 @@ function init(){
             .style({
                 'line-style': 'dashed',
             })
+    CY.style(style)
     
-    //edge.data('no_braking') || 1 
-    CY = cytoscape({
-        container: $('#graph'),
-        elements: get_data(),
-        selectionType: 'additive',
-        style: style,
-        autoungrabify: true,
-        wheelSensitivity: 0.15,
-    })
-    
-    var layouts = {
+    LAYOUT_SETTINGS = {
         'spring': {
             name: 'cose',
             gravity: 0,
@@ -315,58 +369,23 @@ function init(){
             minNodeSpacing: 2,
             equidistant: false,
             concentric: function( node ){
-                var x = search_graph(CY, CY.$('#kerbin_surface'), node);
+                var x = search_graph(CY, CY.$(DEFAULT_NODE_SELECTOR), node);
                 return -x.path.length
             },
             levelWidth: function( nodes ){ return 3},
         },
         'tree': {
             name: 'breadthfirst',
-            roots: CY.$('#kerbin_surface'),
+            roots: CY.$(DEFAULT_NODE_SELECTOR),
         }
     }
     LAYOUT = 1
-    LAYOUTS = _.keys(layouts)
+    LAYOUTS = _.keys(LAYOUT_SETTINGS)
     
-    CY.on('tap', 'node', function(e) {on_tap_handler(CY,e)})
-    
-    $('#layout').click(function(){
-        // iterates the plane change dv inclusion
-        LAYOUT = (LAYOUT + 1) % LAYOUTS.length
-        $('#layout').text('Layout: ' + LAYOUTS[LAYOUT])
-        CY.layout(layouts[LAYOUTS[LAYOUT]])
-        // too cluttered with edges
-        CY.edges().style({opacity:LAYOUTS[LAYOUT] == 'round' ? 0.2 : 1})
-    })
-      
-    $('#dv_mode').click(function(){
-        // iterates the aero mode
-        AERO_MODE = (AERO_MODE + 1) % AERO_MODES.length
-        $('#dv_mode').text('Aero braking: ' + AERO_MODES[AERO_MODE].friendly).prop('title',  AERO_MODES[AERO_MODE].title)
-        search_and_render(CY)
-    })
-    
-    $('#aero_dv').click(function(){
-        // iterates the aero dv assumption
-        AEROBRAKE_DV = (AEROBRAKE_DV + 1) % AEROBRAKE_DVS.length
-        $('#aero_dv').text('Min AB DV: ' + AEROBRAKE_DVS[AEROBRAKE_DV])
-        search_and_render(CY)
-    })
-    
-    $('#plane_change').click(function(){
-        // iterates the plane change dv inclusion
-        PLANE_CHANGE = !PLANE_CHANGE
-        $('#plane_change').text('Plane changes: ' + (PLANE_CHANGE ? 'always' : 'never'))
-        search_and_render(CY)
-    })
-    
-    $('#aero_dv').click()
-    $('#dv_mode').click()
-    $('#plane_change').click()
-    $('#layout').click()
-    
-    var default_node = CY.$('#kerbin_surface')
+    var default_node = CY.$(DEFAULT_NODE_SELECTOR)
     default_node.select()
     node_pair.push(default_node)
+    
+    init_buttons(CY)
 }
 
