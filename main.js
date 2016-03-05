@@ -2,12 +2,24 @@ $(document).ready(function(){
     init()
 })
 
-const AEROBRAKE_DV = 50
 const AEROBRAKE = false
 const DV_MATCH = null
 
-var AERO_MODES = ['best', 'no_braking', 'entry_only']
-var AERO_MODE = AERO_MODES[2]
+// some modes for aero calculations
+var AERO_MODES = [
+    {key: 'entry_only', friendly: 'on entry', title: 'Only aero brake from orbit to surface'},
+    {key: 'best', friendly: 'perfect', title: 'Optimal aero braking used on every manouvre'}, 
+    {key: 'no_braking', friendly: 'never', title: 'Never aero brake'},
+]
+var AERO_MODE = -1
+
+// some modes for assuming a mimimum dv on aerobraking
+var AEROBRAKE_DV = 0
+var AEROBRAKE_DVS = [0, 50, 100, 200, 400]
+
+var PLANE_CHANGE = true
+
+// our start and end points
 var node_pair = []
 
 // planet colours
@@ -38,7 +50,10 @@ function node_data(node_id){
         id: node_id,
         system: ns[0],
         state: ns[1],
-        label: ns[0] + '\n' + ns[1]
+        label: ns[0] + '\n' + ns[1],
+        shape: ns[1] == 'surface' ? 'ellipse' : 'roundrectangle',
+        width: ns[1] == 'surface' ? '40' : '20',
+        height: ns[1] == 'surface' ? '40' : '20',
     }
 }
 
@@ -59,7 +74,6 @@ function get_data(){
         var out = item.out == AEROBRAKE ? AEROBRAKE_DV : item.out
         var back = item.back == AEROBRAKE ? AEROBRAKE_DV : item.back
         
-
         // out
         edges.push({
             data: {
@@ -68,7 +82,10 @@ function get_data(){
                 is_outbound: true,
                 is_aerobrake: item.out == AEROBRAKE,
                 any_aerobrake: any_aerobrake,
-                best: out, no_braking: no_braking, entry_only: nodes[item.target].data.state=='surface' ? out : no_braking}
+                dv: item.out,
+                plane_change: item.plane_change || 0,
+                no_braking: no_braking,
+            }
         })
         // back
         edges.push({
@@ -78,15 +95,32 @@ function get_data(){
                 is_outbound: false,
                 is_aerobrake: item.back == AEROBRAKE,
                 any_aerobrake: any_aerobrake,
-                best: back, no_braking: no_braking, entry_only: nodes[item.source].data.state=='surface' ? back : no_braking}
+                dv: item.back,
+                plane_change: item.plane_change || 0,
+                no_braking: no_braking,
+            }
         })
     })
     
     return {nodes: _.values(nodes), edges: edges}
 }
 
+function calc_dv(edge){
+    // substitute our assumed minimum dv value for aerobraking manouvres
+    var aero_best = edge.data('is_aerobrake') ? AEROBRAKE_DVS[AEROBRAKE_DV] : edge.data('dv')
+    
+    // save our calculations on the edges so we can refer to them later
+    edge.data()['best'] = aero_best
+    edge.data()['entry_only'] = edge.target().data('state')=='surface' ? aero_best : edge.data('no_braking')
+    var dv = edge.data(AERO_MODES[AERO_MODE].key)
+    if (PLANE_CHANGE){
+        dv += edge.data('plane_change')
+    }
+    return dv
+}
+
 function search_graph(cy, source, target){
-    var dij = cy.elements().dijkstra(source, function(edge){return edge.data(AERO_MODE)}, true)
+    var dij = cy.elements().dijkstra(source, calc_dv, true)
     return {
         weight: dij.distanceTo(target),
         path: dij.pathTo(target),
@@ -103,21 +137,17 @@ function render_results(container, start, end, results){
     }))
     _.each(results.path, function(pth){
         if (pth.isNode()){return}
-        container.append($('<div>', {text: pth.data('best') + ' ('+ pth.data('entry_only') + ') ' + ' ' + pth.target().data('label')}))
+        container.append($('<div>', {text: 
+            pth.data('best') + ' ('+ pth.data('entry_only') + ') ' 
+            + ' ' + pth.target().data('label')
+            + (PLANE_CHANGE && pth.data('plane_change') ? ' +P ' + pth.data('plane_change') : '')}))
     })
 }
 
-function tap_handler(cy, evt){
-    cy.nodes().unselect()
-    cy.edges().unselect()
-    var node = evt.cyTarget
-    node_pair.push(node)
-    if (node_pair.length < 2){
-        return
-    }
+function search_and_render(cy){
+    if (node_pair.length !=2){return}
     var start = node_pair[0]
     var end = node_pair[1]
-    node_pair = []
     var out = search_graph(cy, start, end)
     render_results($('#output_out'), start, end, out)
 
@@ -128,16 +158,36 @@ function tap_handler(cy, evt){
     
     back.path.select()
     out.path.select()
+    
+    // I don't like this but it's needed. Something weird with selections and the event ordering.
     _.delay(function(){end.select()}, 0)
 }
 
+function on_tap_handler(cy, evt){
+    var node = evt.cyTarget
+    if (!node) {return}
+    cy.nodes().unselect()
+    cy.edges().unselect()
+    node_pair.push(node)
+    if (node_pair.length < 2){
+        return
+    }
+    if (node_pair.length > 2){
+        // only keep the most recent point
+        node_pair = node_pair.slice(-1)
+    }
+    search_and_render(cy)
+}
+
 function init(){
-    console.log(get_data())
     var style = cytoscape.stylesheet()
         .selector('node')
             .style({
                 'background-color': function(ele){ return PLANET_COLOUR[ele.data('system')] || DEFAULT_COLOUR},
                 'label': function(ele){ return ele.data('label')},
+                'shape': function(ele){ return ele.data('shape')},
+                'width': function(ele){ return ele.data('width')},
+                'height': function(ele){ return ele.data('height')},
                 'text-wrap': 'wrap',
                 'color': '#ddd',
                 'border-color': '#000',
@@ -153,9 +203,12 @@ function init(){
                 'width': '12px',
                 'display': function(ele){ return ele.data('is_outbound') ? 'element' : 'none' },
                 'line-color': function(ele){ return PLANET_COLOUR[ele.target().data('system')] || DEFAULT_COLOUR},
-                'label': function(ele){ return ele.data('no_braking') + (ele.data('any_aerobrake') ? ' +B' : '' )},
+                'label': function(ele){ return ele.data('no_braking') + (ele.data('any_aerobrake') ? ' +A' : '' )},
                 'color': '#ddd',
                 'line-style': 'solid',
+                'text-background-color': '#000',
+                'text-background-opacity': 0.7,
+                'text-background-shape': 'roundrectangle',
             })
         .selector('edge:selected')
             .style({
@@ -182,6 +235,35 @@ function init(){
         wheelSensitivity: 0.15,
     })
     
-    CY.on('tap', 'node', function(e) {tap_handler(CY,e)})
+    CY.on('tap', 'node', function(e) {on_tap_handler(CY,e)})
+      
+    $('#dv_mode').click(function(){
+        // iterates the aero mode
+        AERO_MODE = (AERO_MODE + 1) % AERO_MODES.length
+        $('#dv_mode').text('Aero braking: ' + AERO_MODES[AERO_MODE].friendly).prop('title',  AERO_MODES[AERO_MODE].title)
+        search_and_render(CY)
+    })
+    
+    $('#aero_dv').click(function(){
+        // iterates the aero dv assumption
+        AEROBRAKE_DV = (AEROBRAKE_DV + 1) % AEROBRAKE_DVS.length
+        $('#aero_dv').text('Min AB DV: ' + AEROBRAKE_DVS[AEROBRAKE_DV]).prop('title', 'Assumed minimum delta v needed for any aerobraking manouvre')
+        search_and_render(CY)
+    })
+    
+    $('#plane_change').click(function(){
+        // iterates the plane change dv inclusion
+        PLANE_CHANGE = !PLANE_CHANGE
+        $('#plane_change').text('Plane changes: ' + (PLANE_CHANGE ? 'always' : 'never'))
+        search_and_render(CY)
+    })
+    
+    $('#aero_dv').click()
+    $('#dv_mode').click()
+    $('#plane_change').click()
+    
+    var default_node = CY.$('#kerbin_surface')
+    default_node.select()
+    node_pair.push(default_node)
 }
 

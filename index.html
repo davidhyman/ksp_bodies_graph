@@ -5,11 +5,23 @@
 <script src="underscore-min.js"></script>
 <script src="main.js"></script>
 <style>
+#controls {
+    height: 20px;
+    position: fixed;
+    bottom: 71;
+    right: 0;
+}
 #graph {
     width: 100%;
-    height: 800px;
+    height: calc(100% - 100px);
     display: block;
     background: #112;
+}
+#outputs {
+    position: absolute;
+    width: 100%;
+    bottom: 100;
+    background: rgba(255,255,255,0.1);
 }
 #cool_story_bro {
     color: #444;
@@ -17,10 +29,12 @@
 a, a:visited {
     color: #555;
 }
-html {
+html, body {
     font-family: sans-serif;
     background: #000;
     color: #ddd;
+    margin: 0;
+    padding: 0;
 }
 footer {
     position: fixed;
@@ -34,28 +48,52 @@ footer {
     width: 30%;
     display: inline-block;
 }
+.button {
+    height: 100%;
+    display: inline-block;
+    width: 250px;
+    text-align: center;
+    cursor: pointer;
+    padding: 2px;
+    background: rgba(255,255,255,0.3);
+    border-radius: 2px;
+}
+.button:hover {
+    background: rgba(255,255,255,0.4);
+}
+.noselect {
+    user-select: none;
+    -moz-user-select: none;
+    -webkit-user-select: none;
+    -ms-user-select: none;
+}
 </style>
 </head>
 <body>
+    <div id="controls">
+        <div id="dv_mode" class="button noselect"></div>
+        <div id="aero_dv" class="button noselect"></div>
+        <div id="plane_change" class="button noselect"></div>
+    </div>
     <div id="graph"></div>
-    <div id="output_out" class="output"></div>
-    <div id="output_back" class="output"></div>
-    <div id="output_total" class="output"></div>
+    <div id="outputs">
+        <div id="output_out" class="output"></div>
+        <div id="output_back" class="output"></div>
+        <div id="output_total" class="output">select two nodes to calculate dv</div>
+    </div>
 </body>
 <footer>
 <div id="cool_story_bro">
-Written by David Hyman, 2016.
+Started by David Hyman, 2016.
 
 Inspired by
 <a href="http://deltavmap.com/">deltavmap.com</a>
 and 
-<a href="http://forum.kerbalspaceprogram.com/index.php?/topic/87463-105-swashs-delta-v-map-continued-22-nov-17th-opm-update/">swash's dv maps</a>.
-
+<a href="http://forum.kerbalspaceprogram.com/index.php?/topic/87463-105-swashs-delta-v-map-continued-22-nov-17th-opm-update/">swash's dv maps</a>
+to help plan activities in
+<a href="https://kerbalspaceprogram.com">KSP</a>. Written in a morning with <a href="http://js.cytoscape.org/">cytoscape</a>.
 <br>
-Why is this actually cooler than it looks?
-Because I didn't write a whole 'engine' for creating maps, I just used <a href="http://js.cytoscape.org/">cytoscape</a>.
-
-It looks pants because I can't be bothered to tart it up. Update or fix it yourself at <a href="https://github.com/davidhyman/ksp_bodies_graph">github</a> =).
+Also there was a power cut and I lost everything, had to start from scratch. Grrrr. Update or fix it yourself at <a href="https://github.com/davidhyman/ksp_bodies_graph">github</a> =).
 </div>
 </footer>
 </html>
