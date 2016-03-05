@@ -7,12 +7,25 @@
 <style>
 #graph {
     width: 100%;
-    height: 600px;
+    height: 800px;
     display: block;
-    border: 1px solid black;
+    background: #112;
 }
-body {
+#cool_story_bro {
+    color: #444;
+}
+a, a:visited {
+    color: #555;
+}
+html {
     font-family: sans-serif;
+    background: #000;
+    color: #ddd;
+}
+footer {
+    position: fixed;
+    bottom: 0;
+    padding: 10px;
 }
 .bodies {
     border: 3px solid red;
@@ -24,14 +37,25 @@ body {
 </style>
 </head>
 <body>
-<div id="graph"></div>
-<div id="output_out" class="output"></div>
-<div id="output_back" class="output"></div>
-<div id="output_total" class="output"></div>
-<div id="cool_story_bro">Why is this actually cooler than it looks?
-Because I didn't write a whole 'engine' for creating maps, I just used cytoscape.
-
-It looks pants because I can't be bothered to tart it up.
-</div>
+    <div id="graph"></div>
+    <div id="output_out" class="output"></div>
+    <div id="output_back" class="output"></div>
+    <div id="output_total" class="output"></div>
 </body>
+<footer>
+<div id="cool_story_bro">
+Written by David Hyman, 2016.
+
+Inspired by
+<a href="http://deltavmap.com/">deltavmap.com</a>
+and 
+<a href="http://forum.kerbalspaceprogram.com/index.php?/topic/87463-105-swashs-delta-v-map-continued-22-nov-17th-opm-update/">swash's dv maps</a>.
+
+<br>
+Why is this actually cooler than it looks?
+Because I didn't write a whole 'engine' for creating maps, I just used <a href="http://js.cytoscape.org/">cytoscape</a>.
+
+It looks pants because I can't be bothered to tart it up. Update or fix it yourself at <a href="https://github.com/davidhyman/ksp_bodies_graph">github</a> =).
+</div>
+</footer>
 </html>

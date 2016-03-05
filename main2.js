@@ -2,12 +2,12 @@ $(document).ready(function(){
     init()
 })
 
-const AEROBRAKE_DV = 0
+const AEROBRAKE_DV = 50
 const AEROBRAKE = false
 const DV_MATCH = null
 
 var AERO_MODES = ['best', 'no_braking', 'entry_only']
-var AERO_MODE = AERO_MODES[0]
+var AERO_MODE = AERO_MODES[2]
 var node_pair = []
 
 // planet colours
@@ -37,7 +37,8 @@ function node_data(node_id){
     return {
         id: node_id,
         system: ns[0],
-        state: ns[1]
+        state: ns[1],
+        label: ns[0] + '\n' + ns[1]
     }
 }
 
@@ -53,7 +54,11 @@ function get_data(){
         nodes[item.source] = {data:node_data(item.source)}
         nodes[item.target] = {data:node_data(item.target)}    
         
-        var no_braking = item.out||item.back||0
+        var any_aerobrake = (item.out == AEROBRAKE || item.back == AEROBRAKE)
+        var no_braking = item.out||item.back
+        var out = item.out == AEROBRAKE ? AEROBRAKE_DV : item.out
+        var back = item.back == AEROBRAKE ? AEROBRAKE_DV : item.back
+        
 
         // out
         edges.push({
@@ -61,7 +66,9 @@ function get_data(){
                 source: item.source,
                 target: item.target,
                 is_outbound: true,
-                best: item.out, no_braking: no_braking, entry_only: nodes[item.target].data.state=='surface' ? item.out : no_braking}
+                is_aerobrake: item.out == AEROBRAKE,
+                any_aerobrake: any_aerobrake,
+                best: out, no_braking: no_braking, entry_only: nodes[item.target].data.state=='surface' ? out : no_braking}
         })
         // back
         edges.push({
@@ -69,7 +76,9 @@ function get_data(){
                 source: item.target,
                 target: item.source,
                 is_outbound: false,
-                best: item.back, no_braking: no_braking, entry_only: nodes[item.source].data.state=='surface' ? item.back : no_braking}
+                is_aerobrake: item.back == AEROBRAKE,
+                any_aerobrake: any_aerobrake,
+                best: back, no_braking: no_braking, entry_only: nodes[item.source].data.state=='surface' ? back : no_braking}
         })
     })
     
@@ -85,8 +94,16 @@ function search_graph(cy, source, target){
 }
 
 function render_results(container, start, end, results){
+    container.empty()
+    container.append($('<div>', {text: 
+        start.data('label') + ' to ' + end.data('label')
+    }))
+    container.append($('<div>', {text: 
+        'total dv: ' + results.weight
+    }))
     _.each(results.path, function(pth){
-        $('#output_out')
+        if (pth.isNode()){return}
+        container.append($('<div>', {text: pth.data('best') + ' ('+ pth.data('entry_only') + ') ' + ' ' + pth.target().data('label')}))
     })
 }
 
@@ -100,16 +117,18 @@ function tap_handler(cy, evt){
     }
     var start = node_pair[0]
     var end = node_pair[1]
+    node_pair = []
     var out = search_graph(cy, start, end)
     render_results($('#output_out'), start, end, out)
 
     var back = search_graph(cy, end, start)
     render_results($('#output_back'), end, start, back)
     
-    $('#output_total').empty().append('total dv: ' + (out.weight + back.weight))
+    $('#output_total').empty().append('round trip dv: ' + (out.weight + back.weight))
     
     back.path.select()
     out.path.select()
+    _.delay(function(){end.select()}, 0)
 }
 
 function init(){
@@ -117,18 +136,26 @@ function init(){
     var style = cytoscape.stylesheet()
         .selector('node')
             .style({
-                'background-color': '#ddd',
+                'background-color': function(ele){ return PLANET_COLOUR[ele.data('system')] || DEFAULT_COLOUR},
+                'label': function(ele){ return ele.data('label')},
+                'text-wrap': 'wrap',
+                'color': '#ddd',
+                'border-color': '#000',
+                'border-width': '3px',
             })
         .selector('node:selected')
             .style({
-                'border-color': '#000',
-                'border-width': '2px',
+                'border-color': '#fff',
+                'border-width': '3px',
             })
         .selector('edge')
             .style({
                 'width': '12px',
                 'display': function(ele){ return ele.data('is_outbound') ? 'element' : 'none' },
                 'line-color': function(ele){ return PLANET_COLOUR[ele.target().data('system')] || DEFAULT_COLOUR},
+                'label': function(ele){ return ele.data('no_braking') + (ele.data('any_aerobrake') ? ' +B' : '' )},
+                'color': '#ddd',
+                'line-style': 'solid',
             })
         .selector('edge:selected')
             .style({
@@ -138,12 +165,17 @@ function init(){
     var layout = {
         name: 'cose',
         gravity: 0,
-        edgeElasticity: function( edge ){ return edge.data('no_braking') },
+        numIter: 2000,
+        coolingFactor: 0.97,
+        nodeRepulsion: function( node ){ return 400000; },
+        idealEdgeLength: function( edge ){ return 3},
+        edgeElasticity: function( edge ){ return edge.data('no_braking') || 1 },
     }
     
     CY = cytoscape({
         container: $('#graph'),
         elements: get_data(),
+        selectionType: 'additive',
         style: style,
         layout: layout,
         autoungrabify: true,
