@@ -10,8 +10,21 @@ You can also adjust the assumptions made during the calculation.
 ### Contributions:
 You are welcome to submit pull requests to help keep this up to date.
 
+Licensed under [Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International](https://creativecommons.org/licenses/by-nc-sa/4.0/)
+TL;DR:
+
+Restrictions:
+* Attribute
+* NonCommercial
+* ShareAlike
+
+Can:
+* Distribute
+* Modify
+
 ### References:
 * https://kerbalspaceprogram.com
 * http://deltavmap.com/
-* http://forum.kerbalspaceprogram.com/index.php?/topic/87463-105-swashs-delta-v-map-continued-22-nov-17th-opm-update/
+* [forum.kerbalspaceprogram.com : swashs delta v map](http://forum.kerbalspaceprogram.com/index.php?/topic/87463-105-swashs-delta-v-map-continued-22-nov-17th-opm-update/)
+* https://github.com/merlinthered/ksp_cheat_sheets
 * http://js.cytoscape.org/
