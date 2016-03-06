@@ -125,6 +125,7 @@ function node_data(node_id){
         system: ns[0],
         state: ns[1],
         label: ns[0] + '\n' + ns[1],
+        label_colour: $('<span>').append($('<span>', {text: ns[0], style:'color:'+PLANET_COLOUR[ns[0]]+';'}), $('<span>', {text: ' '+ns[1]})),
         shape: ns[1] == 'surface' ? 'ellipse' : 'roundrectangle',
         width: ns[1] == 'surface' ? '40' : '20',
         height: ns[1] == 'surface' ? '40' : '20',
@@ -203,19 +204,25 @@ function search_graph(cy, source, target){
 
 function render_results(container, start, end, results){
     container.empty()
-    container.append($('<div>', {text: 
-        start.data('label') + ' to ' + end.data('label')
+    container.append($('<div>', {html: 
+        start.data('label_colour')[0].outerHTML + ' to ' + end.data('label_colour')[0].outerHTML
     }))
     container.append($('<div>', {text: 
         'total dv: ' + results.weight
     }))
+    var tab = $('<table>')
     _.each(results.path, function(pth){
         if (pth.isNode()){return}
-        container.append($('<div>', {text: 
-            pth.data('best') + ' ('+ pth.data('entry_only') + ') ' 
-            + ' ' + pth.target().data('label')
-            + (PLANE_CHANGE && pth.data('plane_change') ? ' +P ' + pth.data('plane_change') : '')}))
+        var row = $('<tr>')
+        row.append(
+            $('<td>', {html: pth.target().data('label_colour')[0].outerHTML}),
+            $('<td>', {text: pth.data('is_aerobrake') ? pth.data('no_braking') + ' A' : '', title: 'dv without aerobraking'}),
+            $('<td>', {text: PLANE_CHANGE && pth.data('plane_change') ? pth.data('plane_change') + ' P' : '', title: 'extra dv for plane change'}),
+            $('<td>', {text: pth.data(AERO_MODES[AERO_MODE].key), class:'dv_cells'})
+        )
+        tab.append(row)
     })
+    container.append(tab)
 }
 
 function search_and_render(cy){
