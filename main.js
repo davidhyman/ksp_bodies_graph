@@ -39,8 +39,8 @@ const PLANET_COLOUR = {
     gilly: '#faf',
     moho: '#fa0',
     jool: '#060',
-    bop: '#090',
-    pol: '#0a0',
+    pol: '#080',
+    bop: '#0a0',
     tylo: '#0c0',
     vall: '#0a6',
     laythe: '#0aa',
@@ -60,11 +60,11 @@ const NODE_SOURCE = [
     {source:'minmus_intercept', target:'minmus_orbit', out: 160, back: DV_MATCH},
     {source:'minmus_orbit', target:'minmus_surface', out: 180, back: DV_MATCH},
     
-    {source:'kerbin_orbit', target:'dres_intercept', out: 610, back: AEROBRAKE, plane_change: 1010},
+    {source:'kerbin_capture', target:'dres_intercept', out: 610, back: AEROBRAKE, plane_change: 1010},
     {source:'dres_intercept', target:'dres_orbit', out: 1290, back: DV_MATCH},
     {source:'dres_orbit', target:'dres_surface', out: 430, back: DV_MATCH},
     
-    {source:'kerbin_orbit', target:'moho_intercept', out: 760, back: AEROBRAKE, plane_change: 2520},
+    {source:'kerbin_capture', target:'moho_intercept', out: 760, back: AEROBRAKE, plane_change: 2520},
     {source:'moho_intercept', target:'moho_orbit', out: 2410, back: DV_MATCH},
     {source:'moho_orbit', target:'moho_surface', out: 870, back: DV_MATCH},
     
