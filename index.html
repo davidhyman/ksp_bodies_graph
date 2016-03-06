@@ -20,8 +20,14 @@
 #outputs {
     position: absolute;
     width: 100%;
-    bottom: 100;
-    background: rgba(0,0,0,0.7);
+    bottom: 100px;
+}
+#wat {
+    display: none;
+    position: absolute;
+    width: 100%:
+    bottom: 100px;
+    z-index: 1000;
 }
 #cool_story_bro {
     color: #444;
@@ -40,6 +46,9 @@ footer {
     position: fixed;
     bottom: 0;
     padding: 10px;
+}
+.black_transparent {
+    background: rgba(0,0,0,0.7);
 }
 .bodies {
     border: 3px solid red;
@@ -64,10 +73,10 @@ footer {
 .button {
     height: 100%;
     display: inline-block;
-    width: 200px;
+    min-width: 170px;
     text-align: center;
     cursor: pointer;
-    padding: 2px;
+    padding: 5px 10px;
     background: rgba(255,255,255,0.3);
     border-radius: 2px;
 }
@@ -83,7 +92,21 @@ footer {
 </style>
 </head>
 <body>
+    <div id="wat" class="black_transparent">
+        <h1>KSP delta v interactive map</h1>
+        This tool will sum the delta v requirements to get from Kerbin, to another body and back again.
+        Beware! Currently 'crossing branches' e.g. duna->jool will overestimate, because it doesn't model the common gravity wells,
+        and routes everything through Kerbin's SOI.
+        <ol>
+        <li>Aero braking: always, never, or only on entry (orbit -> surface).</li>
+        <li>Min braking dv: a flat rate cost for using burns to control your aero braking.</li>
+        <li>Plane changes: if you want to land on planetary equators, instead of 'anywhere', you'll want to take this into account.</li>
+        <li>Pin: pin your start location. Click to unpin, pick a route and then pin again - now you can select destinations with a single click.</li>
+        </ol>
+        <div id="close_help" class="button noselect">close help</div>
+    </div>
     <div id="controls">
+        <div id="help" class="button noselect">Help</div>
         <div id="layout" class="button noselect" title="Graph layout methods"></div>
         <div id="pin" class="button noselect" title="Pins your current source node"></div>
         <div id="dv_mode" class="button noselect" title="Delta-V aerobraking assumptions"></div>
@@ -91,7 +114,7 @@ footer {
         <div id="plane_change" class="button noselect" title="Plane changes align your vessel with the planet rotation, but is often expensive"></div>
     </div>
     <div id="graph"></div>
-    <div id="outputs">
+    <div id="outputs" class="black_transparent">
         <div id="output_out" class="output">select a node to calculate dv</div>
         <div id="output_back" class="output"></div>
         <div id="output_total" class="output"></div>

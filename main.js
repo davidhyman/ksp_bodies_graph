@@ -305,6 +305,10 @@ function init_buttons(CY){
         $('#pin').text('Pinned: ' + (pinned ? pinned.data('label') : 'none'))
     })
     
+    $('#help, #close_help').click(function(){
+        $('#wat').toggle()
+    })
+    
     $('#pin').click()
     $('#aero_dv').click()
     $('#dv_mode').click()
