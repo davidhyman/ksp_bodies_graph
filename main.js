@@ -11,6 +11,9 @@ const DEFAULT_NODE_SELECTOR = '#kerbol'
 // new body definitions will be loaded into this object
 var BODIES = {}
 
+// number of metres used for low orbit buffer (= radius + atmosphere + low_orbit_buffer)
+var low_orbit_buffer = 10000
+
 // some modes for aero calculations
 var AERO_MODES = [
     {key: 'best', friendly: 'perfect', title: 'Optimal aero braking used on every manouvre'}, 
