@@ -8,7 +8,7 @@ const SUICIDE_BURN_MARGIN = 1.03 // a fudge factor for no-atmo landings
 const AEROBRAKE = false // the value of 'dv' to signal aerobraking
 const DV_MATCH = null // the value of 'dv' to signal matching the opposing direction
 const DEFAULT_NODE_SELECTOR = '#kerbin_surface'
-const ROOT_NODE = '#kerbol_surface'
+const ROOT_NODE = '#kerbin_geostationary'
 
 // new body definitions will be loaded into this object
 var CURRENT_UNIVERSE = 'ksp_extra'
@@ -30,6 +30,7 @@ var AEROBRAKE_DV = 0
 var AEROBRAKE_DVS = [0, 50, 100, 200, 400]
 
 var PLANE_CHANGE = true
+var GRAVITY_ASSIST = true
 
 // our start and end points
 var node_path = []
@@ -180,7 +181,8 @@ function get_data(){
                     child_node.data.sma + child_node.data.soi,
                     nodes[parent_id].data.soi                
                 ),
-                back: DV_MATCH
+                back: DV_MATCH,
+                no_render: true
             })
             
             if (siblings.length==1){ return } // early out
@@ -207,7 +209,7 @@ function get_data(){
                         end
                     ).total,
                     back: DV_MATCH,
-                    no_render: false,
+                    no_render: true,
                     gravity_assist: true
                 })
                 
@@ -221,7 +223,7 @@ function get_data(){
                         other_child_node.data.sma
                     ).total,
                     back: DV_MATCH,
-                    no_render: false,
+                    no_render: true,
                     gravity_assist: true
                 })
             })
@@ -260,9 +262,9 @@ function get_data(){
         // out
         edges.push({
             data: {
+                outbound: true,
                 source: item.source,
                 target: item.target,
-                no_render: true,
                 gravity_assist: item.gravity_assist,
                 is_aerobrake: item.out == AEROBRAKE,
                 any_aerobrake: any_aerobrake,
@@ -274,6 +276,7 @@ function get_data(){
         // back
         edges.push({
             data: {
+                outbound: false,
                 source: item.target,
                 target: item.source,
                 no_render: item.no_render,
@@ -292,7 +295,7 @@ function get_data(){
     return output
 }
 
-function calc_dv(edge){
+function calc_dv(edge, force_raw){
     var edge_data = edge.data()
     // substitute our assumed minimum dv value for aerobraking manouvres
     var aero_best = edge_data['is_aerobrake'] ? AEROBRAKE_DVS[AEROBRAKE_DV] : edge.data('dv')
@@ -304,17 +307,19 @@ function calc_dv(edge){
     if (PLANE_CHANGE){
         dv += edge_data['plane_change']
     }
-    if (true && edge_data['gravity_assist']){
-        dv += 200
+    if (!force_raw && !GRAVITY_ASSIST && (edge.target().data('system') != edge.source().data('system'))){
+        dv += 2e6 // weight SOI transitions heavily
     }
     return dv
 }
 
 function search_graph(cy, source, target){
     var dij = cy.elements().dijkstra(source, calc_dv, true)
+    var path = dij.pathTo(target)
     return {
         weight: dij.distanceTo(target),
-        path: dij.pathTo(target),
+        path: path,
+        total: _.reduce(path, function(memo, item){ return item.isNode() ? memo : memo + calc_dv(item, true); }, 0),
     }
 }
 
@@ -324,7 +329,7 @@ function render_results(container, start, end, results){
         start.data('label_colour')[0].outerHTML + ' to ' + end.data('label_colour')[0].outerHTML
     }))
     container.append($('<div>', {text: 
-        'total dv: ' + Math.round(results.weight)
+        'total dv: ' + Math.round(results.total)
     }))
     var tab = $('<table>')
     _.each(results.path, function(pth){
@@ -343,6 +348,9 @@ function render_results(container, start, end, results){
 
 function search_and_render(cy){
     if (node_path.length !=2){return}
+    
+    cy.edges().unselect()
+    
     var start = node_path[0]
     var end = node_path[1]
     var out = search_graph(cy, start, end)
@@ -351,7 +359,7 @@ function search_and_render(cy){
     var back = search_graph(cy, end, start)
     render_results($('#output_back'), end, start, back)
     
-    $('#output_total').empty().append('round trip dv: ' + Math.round(out.weight + back.weight))
+    $('#output_total').empty().append('round trip dv: ' + Math.round(out.total + back.total))
     
     back.path.select()
     out.path.select()
@@ -393,7 +401,7 @@ function init_buttons(CY){
     $('#dv_mode').click(function(){
         // iterates the aero mode
         AERO_MODE = (AERO_MODE + 1) % AERO_MODES.length
-        $('#dv_mode').text('Aero braking: ' + AERO_MODES[AERO_MODE].friendly).prop('title',  AERO_MODES[AERO_MODE].title)
+        $('#dv_mode').text('Aero: ' + AERO_MODES[AERO_MODE].friendly).prop('title',  AERO_MODES[AERO_MODE].title)
         search_and_render(CY)
     })
     
@@ -407,7 +415,14 @@ function init_buttons(CY){
     $('#plane_change').click(function(){
         // iterates the plane change dv inclusion
         PLANE_CHANGE = !PLANE_CHANGE
-        $('#plane_change').text('Plane changes: ' + (PLANE_CHANGE ? 'all' : 'none'))
+        $('#plane_change').text('Plane: ' + (PLANE_CHANGE ? 'all' : 'none'))
+        search_and_render(CY)
+    })
+    
+    $('#gravity_assist').click(function(){
+        // iterates the plane change dv inclusion
+        GRAVITY_ASSIST = !GRAVITY_ASSIST
+        $('#gravity_assist').text('Gravity: ' + (GRAVITY_ASSIST ? 'assist' : 'none'))
         search_and_render(CY)
     })
     
@@ -418,7 +433,7 @@ function init_buttons(CY){
         } else {
             pinned = node_path[0]
         }
-        $('#pin').text('Pinned: ' + (pinned ? pinned.data('label') : 'none'))
+        $('#pin').text('Pin: ' + (pinned ? pinned.data('label') : 'none'))
     })
     
     $('#help, #close_help').click(function(){
@@ -430,6 +445,7 @@ function init_buttons(CY){
     $('#dv_mode').click()
     $('#plane_change').click()
     $('#layout').click()
+    $('#gravity_assist').click()
 }
 
 function init(){
@@ -466,7 +482,7 @@ function init(){
         .selector('edge')
             .style({
                 'width': '12px',
-                'display': function(ele){ return ele.data('no_render') ? 'none' : 'element'},
+                'display': function(ele){ return (ele.data('no_render') || ele.data('outbound')) ? 'none' : 'element'},
                 'line-color': function(ele){ return ele.target().data('colour') || DEFAULT_COLOUR},
                 'label': function(ele){ return Math.round(ele.data('no_braking')) + (ele.data('any_aerobrake') ? '\n(aero)' : '' )},
                 'color': '#ddd',
@@ -477,6 +493,7 @@ function init(){
             })
         .selector('edge:selected')
             .style({
+                'display': function(ele){ return (ele.data('outbound')) ? 'none' : 'element'},
                 'line-style': 'dashed',
             })
     CY.style(style)
@@ -578,10 +595,11 @@ function test(){
     var c = []
     _.each(tests, function(params){
         var t = search_graph(CY, CY.$(params.from), CY.$(params.to))
-        var p = Math.round(100 * ((t.weight - params.expect) / t.weight))
+        var cost = t.total
+        var p = Math.round(100 * ((cost - params.expect) / cost))
         c.push(Math.abs(p))
-        console.log('test', params, t.weight,
-                    'error: ' + Math.round(t.weight - params.expect),
+        console.log('test', params, cost,
+                    'error: ' + Math.round(cost - params.expect),
                     p + '%'
         )
     })
