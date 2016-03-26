@@ -79,11 +79,11 @@ function hohmann_exit(mass, start, target){
     )
 }
 
-function planet_name_to_node(planet_name){
+function system_name_to_node(planet_name){
     // ensure planets have their default state
     // kerbin -> 'kerbin_orbit'
     if (planet_name.split('_').length == 1){
-        planet_name += '_orbit'
+        planet_name += '_surface'
     }
     return planet_name
 }
@@ -120,17 +120,25 @@ function get_data(){
     
     // add hierarchical SOI structure for nodes
     _.each(bodies, function(item){
-        item.id = planet_name_to_node(item.name)
+        item.id = system_name_to_node(item.name)
         var this_data = node_data(item)
         nodes[item.id] = {data: this_data}
         
         // for everything apart from Kerbol ...
         if (!item.parent){ return }
-        item.parent_id = planet_name_to_node(item.parent)
+        item.parent_id = system_name_to_node(item.parent)
+        
+        // create orbit: every body has one, though expecting overrides for atmo values
+        edge_generators.push({
+            source: item.name + '_surface',
+            target: item.name + '_orbit',
+            out: orbit_to_surface(this_data),
+            back: DV_MATCH
+        })
         
         // create SOI: we can calculate dv from orbit to the SOI
         edge_generators.push({
-            source: item.id,
+            source: item.name + '_orbit',
             target: item.name + '_soi',
             out: hohmann(
                 this_data.mass,
@@ -139,15 +147,7 @@ function get_data(){
             ).enter,
             back: DV_MATCH
         })
-        
-        // create surface: every body has one, though expecting overrides for atmo values
-        edge_generators.push({
-            source: item.id,
-            target: item.name + '_surface',
-            out: orbit_to_surface(this_data),
-            back: DV_MATCH
-        })
-        
+            
         // create our own temporary graph using this structure { k : [children] }
         if (!_.has(children, item.parent_id)){
             children[item.parent_id] = []
@@ -158,7 +158,7 @@ function get_data(){
     // add those interplanetary crosslinks
     _.each(children, function(siblings, parent_id){
         _.each(siblings, function(child){
-            var child_node = nodes[planet_name_to_node(child)]
+            var child_node = nodes[system_name_to_node(child)]
             // every child from SOI to the parent orbit
             edge_generators.push({
                 source: child + '_soi',
@@ -189,7 +189,7 @@ function get_data(){
                 if (other_child == child){ return }
                 // we can go to any child on the same level
                 // this is soi -> soi, but it takes less dv to go orbit -> soi
-                var other_child_node = nodes[planet_name_to_node(other_child)]
+                var other_child_node = nodes[system_name_to_node(other_child)]
                 var start = Math.min(
                     child_node.data.sma + child_node.data.soi,
                     other_child_node.data.sma + other_child_node.data.soi
@@ -247,7 +247,7 @@ function get_data(){
             if (!_.has(nodes, stub)){
                 var stub_data = node_data({id: stub})
                 // try to update the colour by referencing our existing nodes
-                stub_data.colour = nodes[stub_data.system + '_orbit'].data.colour
+                stub_data.colour = nodes[system_name_to_node(stub_data.system)].data.colour
                 nodes[stub] = {data:stub_data}
             }  
         })
