@@ -1,10 +1,12 @@
 $(document).ready(function(){
+    console.log(get_data())
     init()
 })
 
+const G = 6.674e-11
 const AEROBRAKE = false
 const DV_MATCH = null
-const DEFAULT_NODE_SELECTOR = '#kerbin_surface'
+const DEFAULT_NODE_SELECTOR = '#kerbol'
 
 // new body definitions will be loaded into this object
 var BODIES = {}
@@ -135,6 +137,37 @@ function node_data(node_id){
     }
 }
 
+function hohmann(mass, start, target){
+    // see https://en.wikipedia.org/wiki/Hohmann_transfer_orbit
+    var output = {
+        enter: hohmann_enter(mass, start, target),
+        exit: hohmann_exit(mass, start, target)
+    }
+    output.total = output.enter + output.exit
+    console.log('hohmann for ', mass, start, target, output)
+    return output
+}
+
+function hohmann_enter(mass, start, target){
+    return Math.abs(
+        Math.sqrt(mass * G / start) 
+        * (
+            Math.sqrt(2 * target / (start + target))
+            - 1
+        )
+    )
+}
+
+function hohmann_exit(mass, start, target){
+    return Math.abs(
+        Math.sqrt(mass * G / target) 
+        * (
+            1
+            - Math.sqrt(2 * start / (start + target))
+        )
+    )
+}
+
 function get_data(){
     var nodes = {}
     var edges = []
@@ -177,6 +210,75 @@ function get_data(){
                 plane_change: item.plane_change || 0,
                 no_braking: no_braking,
             }
+        })
+    })
+    
+    return {nodes: _.values(nodes), edges: edges}
+}
+
+function body_data(item){
+    var data = item
+    data.id = item.name
+    return data
+}
+
+function get_data(){
+    var nodes = {}
+    var edges = []
+    var universe = 'ksp_extra' // just for now...
+    
+    // we want to add the n^2 sibling-sibling crosslinks for every possible transfer between orbits at the same level
+    // we can calculate the cost now, and search on it very rapidly later
+    var children = {}
+    
+    // add hierarchical SOI structure
+    _.each(BODIES[universe], function(item){
+        nodes[item.name] = {data: body_data(item)}
+        if (!item.parent){ return }
+        
+        // we can go there
+        edges.push({
+            data: {
+                source: item.parent,
+                target: item.name,
+                is_outbound: true,
+            }
+        })
+        
+        // we can get back
+        edges.push({
+            data: {
+                source: item.name,
+                target: item.parent,
+                is_outbound: false,
+            }
+        })
+        console.log('map', item.parent, item.name)
+        
+        // do our own children list
+        if (!_.has(children, item.parent)){
+            children[item.parent] = []
+        }
+        children[item.parent].push(item.name)
+    })
+    
+    // add those sibling crosslinks
+    _.each(children, function(siblings, parent){
+        if (siblings.length==1){ return } // early out
+        _.each(siblings, function(child){
+            _.each(siblings, function(other_child){
+                if (other_child == child){ return }
+                // we can go to any child on the same level
+                console.log('xlink', child, other_child)
+                edges.push({
+                    data: {
+                        source: child,
+                        target: other_child,
+                        is_outbound: false,
+                        dv: hohmann(nodes[child].data.mass, nodes[child].data.sma, nodes[other_child].data.sma)
+                    }
+                })
+            })
         })
     })
     
@@ -327,6 +429,9 @@ function init(){
         autoungrabify: true,
         wheelSensitivity: 0.15,
     })
+    
+    console.log('cy init ok')
+        
     CY.on('tap', 'node', function(e) {on_tap_handler(CY,e)})
 
     var style = cytoscape.stylesheet()
@@ -364,6 +469,8 @@ function init(){
                 'line-style': 'dashed',
             })
     CY.style(style)
+    
+    console.log('cy style ok')
     
     LAYOUT_SETTINGS = {
         'spring': {
