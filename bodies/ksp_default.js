@@ -64,6 +64,15 @@ UNIVERSE.ksp_default = {
             soi: 47921949,
             parent: 'kerbol',
         },
+        {
+            name: 'moho',
+            colour: '#fa0',
+            mass: 2.5263617e21,
+            sma: 5263138304,
+            radius: 250000,
+            soi: 9646663,
+            parent: 'kerbol',
+        },
     ]
 }
 
