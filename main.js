@@ -33,7 +33,7 @@ var node_path = []
 var pinned = null
 
 // planet colours
-const DEFAULT_COLOUR = '#333'
+const DEFAULT_COLOUR = '#aaa'
 
 function hohmann(mass, start, target){
     // see https://en.wikipedia.org/wiki/Hohmann_transfer_orbit
@@ -42,7 +42,7 @@ function hohmann(mass, start, target){
         exit: hohmann_exit(mass, start, target)
     }
     output.total = output.enter + output.exit
-    console.log('hohmann for ', mass, start, target, output)
+    //console.log('hohmann for ', mass, start, target, output)
     return output
 }
 
@@ -89,7 +89,7 @@ function node_data(node){
         shape: ns[1] == 'surface' ? 'ellipse' : 'roundrectangle',
         width: ns[1] == 'surface' ? '40' : '20',
         height: ns[1] == 'surface' ? '40' : '20',
-        orbit: node.radius + node.atmosphere + LOW_ORBIT_BUFFER,
+        orbit: node.radius + (node.atmosphere || 0) + LOW_ORBIT_BUFFER,
     })
     return output
 }
@@ -119,11 +119,11 @@ function get_data(){
         edge_generators.push({
             source: item.id,
             target: item.name + '_soi',
-            out: hohmann_enter(
+            out: hohmann(
                 this_data.mass,
                 this_data.orbit,
                 this_data.soi
-            ),
+            ).enter,
             back: DV_MATCH
         })
         
@@ -131,7 +131,7 @@ function get_data(){
         edge_generators.push({
             source: item.id,
             target: item.name + '_surface',
-            out: 0,
+            out: 10,
             back: DV_MATCH
         })
         
@@ -150,9 +150,9 @@ function get_data(){
                 source: child + '_soi',
                 target: nodes[parent_id].data.name + '_orbit',
                 out: hohmann_enter(
-                    1,
-                    1,
-                    1                    
+                    nodes[parent_id].data.mass,
+                    nodes[child + '_orbit'].data.sma,
+                    nodes[parent_id].data.orbit                 
                 ),
                 back: DV_MATCH
             })
@@ -161,11 +161,10 @@ function get_data(){
             
             _.each(siblings, function(other_child){
                 if (other_child == child){ return }
-                console.log('xlink', child, other_child)
                 // we can go to any child on the same level
                 // this is soi -> soi, but it takes less dv to go orbit -> soi
                 edge_generators.push({
-                    source: child+'_soi',
+                    source: child+'_orbit',
                     target: other_child+'_soi',
                     out: hohmann(
                         nodes[parent_id].data.mass,
@@ -187,6 +186,7 @@ function get_data(){
     
     console.log('edges to make:', edge_generators)
     
+    // turn our edge shorthand into cytoscape graph edges
     _.each(unique_edges, function(item, key){
         // resolve DV match, this is intended to stop duplication of dv inputs
         if (item.out==DV_MATCH){ item.out = item.back }
@@ -268,7 +268,7 @@ function render_results(container, start, end, results){
         start.data('label_colour')[0].outerHTML + ' to ' + end.data('label_colour')[0].outerHTML
     }))
     container.append($('<div>', {text: 
-        'total dv: ' + results.weight
+        'total dv: ' + Math.round(results.weight)
     }))
     var tab = $('<table>')
     _.each(results.path, function(pth){
@@ -278,7 +278,7 @@ function render_results(container, start, end, results){
             $('<td>', {html: pth.target().data('label_colour')[0].outerHTML}),
             $('<td>', {text: pth.data('is_aerobrake') ? pth.data('no_braking') + ' A' : '', title: 'dv without aerobraking'}),
             $('<td>', {text: PLANE_CHANGE && pth.data('plane_change') ? pth.data('plane_change') + ' P' : '', title: 'extra dv for plane change'}),
-            $('<td>', {text: pth.data(AERO_MODES[AERO_MODE].key), class:'dv_cells'})
+            $('<td>', {text: Math.round(pth.data(AERO_MODES[AERO_MODE].key)), class:'dv_cells'})
         )
         tab.append(row)
     })
@@ -295,7 +295,7 @@ function search_and_render(cy){
     var back = search_graph(cy, end, start)
     render_results($('#output_back'), end, start, back)
     
-    $('#output_total').empty().append('round trip dv: ' + (out.weight + back.weight))
+    $('#output_total').empty().append('round trip dv: ' + Math.round(out.weight + back.weight))
     
     back.path.select()
     out.path.select()
@@ -412,7 +412,7 @@ function init(){
                 'width': '12px',
                 'display': function(ele){ return ele.data('no_render') ? 'none' : 'element'},
                 'line-color': function(ele){ return ele.target().data('colour') || DEFAULT_COLOUR},
-                'label': function(ele){ return ele.data('no_braking') + (ele.data('any_aerobrake') ? ' +A' : '' )},
+                'label': function(ele){ return Math.round(ele.data('no_braking')) + (ele.data('any_aerobrake') ? '\n(aero)' : '' )},
                 'color': '#ddd',
                 'line-style': 'solid',
                 'text-background-color': '#000',
