@@ -1,99 +1,15 @@
+<!DOCTYPE html>
 <html>
 <head>
-<script src="cytoscape.min.js"></script>
-<script src="jquery-2.2.1.min.js"></script>
-<script src="underscore-min.js"></script>
-<script src="main.js"></script>
-<style>
-#controls {
-    height: 20px;
-    position: fixed;
-    bottom: 71;
-    right: 0;
-    width: 100%;
-}
-#graph {
-    width: 100%;
-    height: calc(100vh - 100px);
-    display: block;
-    background: #112;
-}
-#outputs {
-    position: absolute;
-    width: 100%;
-    bottom: 100px;
-}
-#wat {
-    display: none;
-    position: absolute;
-    width: 100%;
-    bottom: 100px;
-    z-index: 1000;
-}
-#cool_story_bro {
-    color: #444;
-}
-a, a:visited {
-    color: #555;
-}
-html, body {
-    font-family: sans-serif;
-    background: #000;
-    color: #ddd;
-    margin: 0;
-    padding: 0;
-}
-footer {
-    position: fixed;
-    bottom: 0;
-    padding: 10px;
-}
-.black_transparent {
-    background: rgba(0,0,0,0.7);
-}
-.bodies {
-    border: 3px solid red;
-}
-.output {
-    width: 30%;
-    padding: 1%;
-    display: inline-block;
-    text-align: right;
-}
-.output table {
-    display: block;
-    width: 100%;
-    border-collapse: collapse;
-}
-.output .dv_cells{
-    text-align: right;
-}
-.output tr:nth-child(even){
-    background: rgba(255,255,255,0.07);
-}
-.button {
-    height: 100%;
-    display: inline-block;
-    width: calc(100%/6 - 24px);
-    text-align: center;
-    cursor: pointer;
-    padding: 5px 10px;
-    background: rgba(255,255,255,0.3);
-    border-radius: 2px;
-    overflow: hidden;
-}
-.button:hover {
-    background: rgba(255,255,255,0.4);
-}
-.noselect {
-    user-select: none;
-    -moz-user-select: none;
-    -webkit-user-select: none;
-    -ms-user-select: none;
-}
-</style>
+    <script src="cytoscape.min.js"></script>
+    <script src="jquery-2.2.1.min.js"></script>
+    <script src="underscore-min.js"></script>
+    <script src="main.js"></script>
+    <script src="bodies/ksp_default.js"></script>
+    <link rel="stylesheet" type="text/css" href="style.css">
 </head>
 <body>
+<div id="content">
     <div id="wat" class="black_transparent">
         <h1>KSP delta v interactive map</h1>
         This tool will sum the delta v requirements to get from Kerbin, to another body and back again.
@@ -121,20 +37,21 @@ footer {
         <div id="output_back" class="output"></div>
         <div id="output_total" class="output"></div>
     </div>
-</body>
-<footer>
-<div id="cool_story_bro">
-Started by David Hyman, 2016.
-
-Inspired by
-<a href="http://deltavmap.com/">deltavmap.com</a>
-and 
-<a href="http://forum.kerbalspaceprogram.com/index.php?/topic/87463-105-swashs-delta-v-map-continued-22-nov-17th-opm-update/">swash's dv maps</a>
-to help plan activities in
-<a href="https://kerbalspaceprogram.com">KSP</a>. Written in a morning with <a href="http://js.cytoscape.org/">cytoscape</a>.
-<br>
-Also there was a power cut and I lost everything, had to start from scratch. Grrrr. Update or fix it yourself at <a href="https://github.com/davidhyman/ksp_bodies_graph">github</a> =).
-CC BY-NC-SA 4.0
 </div>
-</footer>
+<div id="footer">
+    <div id="cool_story_bro">
+        Started by David Hyman, 2016.
+
+        Inspired by
+        <a href="http://deltavmap.com/">deltavmap.com</a>
+        and 
+        <a href="http://forum.kerbalspaceprogram.com/index.php?/topic/87463-105-swashs-delta-v-map-continued-22-nov-17th-opm-update/">swash's dv maps</a>
+        to help plan activities in
+        <a href="https://kerbalspaceprogram.com">KSP</a>. Written in a morning with <a href="http://js.cytoscape.org/">cytoscape</a>.
+        <br>
+        Also there was a power cut and I lost everything, had to start from scratch. Grrrr. Update or fix it yourself at <a href="https://github.com/davidhyman/ksp_bodies_graph">github</a> =).
+        CC BY-NC-SA 4.0
+    </div>
+</div>
+</body>
 </html>

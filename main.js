@@ -6,6 +6,9 @@ const AEROBRAKE = false
 const DV_MATCH = null
 const DEFAULT_NODE_SELECTOR = '#kerbin_surface'
 
+// new body definitions will be loaded into this object
+var BODIES = {}
+
 // some modes for aero calculations
 var AERO_MODES = [
     {key: 'best', friendly: 'perfect', title: 'Optimal aero braking used on every manouvre'}, 
@@ -306,7 +309,7 @@ function init_buttons(CY){
     })
     
     $('#help, #close_help').click(function(){
-        $('#wat').toggle()
+        $('#wat,#outputs').toggle()
     })
     
     $('#pin').click()
