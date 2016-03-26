@@ -6,6 +6,7 @@ DV_MATCH: this direction is the same as the other one (exists to reduce data dis
 UNIVERSE.ksp_default = {
     // create or override nodes by describing their bidirectional edges
     edge_overrides: [
+        {source:'kerbin_orbit', target:'kerbin_geostationary', out: 1115, back: AEROBRAKE},
         {source:'kerbin_surface', target:'kerbin_orbit', out: 3400, back: AEROBRAKE},
         {source:'mun_orbit', target:'mun_surface', out: 580, back: DV_MATCH},
         {source:'minmus_orbit', target:'minmus_surface', out: 180, back: DV_MATCH},

@@ -12,7 +12,7 @@ var CURRENT_UNIVERSE = 'ksp_extra'
 var UNIVERSE = {}
 
 // number of metres used for low orbit buffer (= radius + atmosphere + low_orbit_buffer)
-var low_orbit_buffer = 10000
+const LOW_ORBIT_BUFFER = 10000
 
 // some modes for aero calculations
 var AERO_MODES = [
@@ -89,6 +89,7 @@ function node_data(node){
         shape: ns[1] == 'surface' ? 'ellipse' : 'roundrectangle',
         width: ns[1] == 'surface' ? '40' : '20',
         height: ns[1] == 'surface' ? '40' : '20',
+        orbit: node.radius + node.atmosphere + LOW_ORBIT_BUFFER,
     })
     return output
 }
@@ -118,15 +119,11 @@ function get_data(){
         edge_generators.push({
             source: item.id,
             target: item.name + '_soi',
-            out: 42,
-            back: DV_MATCH
-        })
-        
-        // and from SOI to parent orbit
-        edge_generators.push({
-            source: item.name + '_soi',
-            target: item.parent_id,
-            out: 1234,
+            out: hohmann_enter(
+                this_data.mass,
+                this_data.orbit,
+                this_data.soi
+            ),
             back: DV_MATCH
         })
         
@@ -134,7 +131,7 @@ function get_data(){
         edge_generators.push({
             source: item.id,
             target: item.name + '_surface',
-            out: 1234,
+            out: 0,
             back: DV_MATCH
         })
         
@@ -147,8 +144,21 @@ function get_data(){
     
     // add those interplanetary crosslinks
     _.each(children, function(siblings, parent_id){
-        if (siblings.length==1){ return } // early out
         _.each(siblings, function(child){
+            // every child from SOI to the parent orbit
+            edge_generators.push({
+                source: child + '_soi',
+                target: nodes[parent_id].data.name + '_orbit',
+                out: hohmann_enter(
+                    1,
+                    1,
+                    1                    
+                ),
+                back: DV_MATCH
+            })
+            
+            if (siblings.length==1){ return } // early out
+            
             _.each(siblings, function(other_child){
                 if (other_child == child){ return }
                 console.log('xlink', child, other_child)
@@ -161,9 +171,9 @@ function get_data(){
                         nodes[parent_id].data.mass,
                         nodes[planet_name_to_node(child)].data.sma,
                         nodes[planet_name_to_node(other_child)].data.sma
-                    ),
+                    ).total,
                     back: DV_MATCH,
-                    no_render: true
+                    no_render: false
                 })
             })
         })
