@@ -1,5 +1,6 @@
 $(document).ready(function(){
     init()
+    test()
 })
 
 const G = 6.674e-11
@@ -465,3 +466,59 @@ function init(){
     init_buttons(CY)
 }
 
+function test(){
+    var tests = [
+        { // surface checks
+            from: '#kerbin_surface',
+            to: '#mun_surface',
+            expect: 5150
+        },
+        {
+            from: '#mun_surface',
+            to: '#kerbin_surface',
+            expect: 1800
+        },
+        {
+            from: '#kerbin_surface',
+            to: '#duna_surface',
+            expect: 5140
+        },
+        {
+            from: '#kerbin_surface',
+            to: '#ike_surface',
+            expect: 5330
+        },
+        {
+            from: '#kerbin_surface',
+            to: '#minmus_surface',
+            expect: 4670
+        },
+        {
+            from: '#kerbin_surface',
+            to: '#mun_surface',
+            expect: 5150
+        },
+        { // orbit checks
+            from: '#mun_orbit',
+            to: '#minmus_orbit',
+            expect: 303
+        },
+        {
+            from: '#moho_orbit',
+            to: '#dres_orbit',
+            expect: 6254
+        },
+        {
+            from: '#duna_orbit',
+            to: '#dres_orbit',
+            expect: 2339
+        },
+    ]
+    _.each(tests, function(params){
+        var t = search_graph(CY, CY.$(params.from), CY.$(params.to))
+        console.log('test', params, t.weight,
+                    'error: ' + Math.round(t.weight - params.expect),
+                    Math.round(100 * ((t.weight - params.expect) / t.weight)) + '%'
+        )
+    })
+}
