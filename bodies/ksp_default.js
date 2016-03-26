@@ -73,6 +73,15 @@ UNIVERSE.ksp_default = {
             soi: 9646663,
             parent: 'kerbol',
         },
+        {
+            name: 'dres',
+            colour: '#aaa',
+            mass: 3.2191322e20,
+            sma: 40839348203,
+            radius: 138000,
+            soi: 32832840,
+            parent: 'kerbol',
+        },
     ]
 }
 
