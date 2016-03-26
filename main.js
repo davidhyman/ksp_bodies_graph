@@ -4,6 +4,7 @@ $(document).ready(function(){
 })
 
 const G = 6.674e-11
+const SUICIDE_BURN_MARGIN = 1.03
 const AEROBRAKE = false // the value of 'dv' to signal aerobraking
 const DV_MATCH = null // the value of 'dv' to signal matching the opposing direction
 const DEFAULT_NODE_SELECTOR = '#kerbol_surface'
@@ -36,11 +37,21 @@ var pinned = null
 // planet colours
 const DEFAULT_COLOUR = '#aaa'
 
+function orbit_to_surface(item){
+    // speed of the planet surface - we must match this or be destroyed
+    var surface_velocity = item.rotational_period ? 2*Math.PI / item.rotational_period : 0
+    var orbit_at_surface = Math.sqrt(item.mass * G / item.radius)
+    var hm = hohmann(item.mass, item.radius, item.orbit).total
+    return (hm + orbit_at_surface - surface_velocity) * SUICIDE_BURN_MARGIN
+}
+
 function hohmann(mass, start, target){
     // see https://en.wikipedia.org/wiki/Hohmann_transfer_orbit
+    var ap_radius = Math.max(start, target)
+    var pe_radius = Math.min(start, target)
     var output = {
-        enter: hohmann_enter(mass, start, target),
-        exit: hohmann_exit(mass, start, target)
+        enter: hohmann_enter(mass, pe_radius, ap_radius),
+        exit: hohmann_exit(mass, pe_radius, ap_radius)
     }
     output.total = output.enter + output.exit
     //console.log('hohmann for ', mass, start, target, output)
@@ -128,11 +139,11 @@ function get_data(){
             back: DV_MATCH
         })
         
-        // and every body has a surface ... (worth a punt, expecting overrides here)
+        // and every body has a surface ... (worth a punt, expecting overrides for atmo values)    
         edge_generators.push({
             source: item.id,
             target: item.name + '_surface',
-            out: 10,
+            out: orbit_to_surface(this_data),
             back: DV_MATCH
         })
         
@@ -512,6 +523,11 @@ function test(){
             from: '#duna_orbit',
             to: '#dres_orbit',
             expect: 2339
+        },
+        { // landing dv
+            from: '#moho_orbit',
+            to: '#moho_surface',
+            expect: 870
         },
     ]
     _.each(tests, function(params){
