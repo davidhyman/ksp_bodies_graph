@@ -1,15 +1,15 @@
 $(document).ready(function(){
-    console.log(get_data())
     init()
 })
 
 const G = 6.674e-11
-const AEROBRAKE = false
-const DV_MATCH = null
-const DEFAULT_NODE_SELECTOR = '#kerbol'
+const AEROBRAKE = false // the value of 'dv' to signal aerobraking
+const DV_MATCH = null // the value of 'dv' to signal matching the opposing direction
+const DEFAULT_NODE_SELECTOR = '#kerbol_surface'
 
 // new body definitions will be loaded into this object
-var BODIES = {}
+var CURRENT_UNIVERSE = 'ksp_extra'
+var UNIVERSE = {}
 
 // number of metres used for low orbit buffer (= radius + atmosphere + low_orbit_buffer)
 var low_orbit_buffer = 10000
@@ -29,116 +29,11 @@ var AEROBRAKE_DVS = [0, 50, 100, 200, 400]
 var PLANE_CHANGE = true
 
 // our start and end points
-var node_pair = []
+var node_path = []
 var pinned = null
 
 // planet colours
 const DEFAULT_COLOUR = '#333'
-const PLANET_COLOUR = {
-    kerbol: '#ff0',
-    kerbin: '#0AF',
-    mun: '#666',
-    minmus: '#0fa',
-    eeloo: '#eee',
-    dres: '#aaa',
-    duna: '#a00',
-    ike: '#faa',
-    eve: '#a0a',
-    gilly: '#faf',
-    moho: '#fa0',
-    jool: '#060',
-    pol: '#080',
-    bop: '#0a0',
-    tylo: '#0c0',
-    vall: '#0a6',
-    laythe: '#0aa',
-}
-
-// ksp dv map, directions are relative to kerbin
-const NODE_SOURCE = [
-    {source:'kerbin_surface', target:'kerbin_orbit', out: 3400, back: AEROBRAKE},
-    {source:'kerbin_orbit', target:'kerbin_geostationary', out: 1115, back: AEROBRAKE},
-    {source:'kerbin_orbit', target:'kerbin_capture', out: 950, back: AEROBRAKE},
-    
-    {source:'kerbin_orbit', target:'mun_intercept', out: 860, back: AEROBRAKE},
-    {source:'mun_intercept', target:'mun_orbit', out: 310, back: DV_MATCH},
-    {source:'mun_orbit', target:'mun_surface', out: 580, back: DV_MATCH},
-    
-    {source:'kerbin_orbit', target:'minmus_intercept', out: 930, back: AEROBRAKE, plane_change: 340},
-    {source:'minmus_intercept', target:'minmus_orbit', out: 160, back: DV_MATCH},
-    {source:'minmus_orbit', target:'minmus_surface', out: 180, back: DV_MATCH},
-    
-    {source:'kerbin_capture', target:'dres_intercept', out: 610, back: AEROBRAKE, plane_change: 1010},
-    {source:'dres_intercept', target:'dres_orbit', out: 1290, back: DV_MATCH},
-    {source:'dres_orbit', target:'dres_surface', out: 430, back: DV_MATCH},
-    
-    {source:'kerbin_capture', target:'moho_intercept', out: 760, back: AEROBRAKE, plane_change: 2520},
-    {source:'moho_intercept', target:'moho_orbit', out: 2410, back: DV_MATCH},
-    {source:'moho_orbit', target:'moho_surface', out: 870, back: DV_MATCH},
-    
-    {source:'kerbin_capture', target:'kerbol_capture', out: 6000, back: AEROBRAKE},
-    {source:'kerbol_capture', target:'kerbol_orbit', out: 137000, back: DV_MATCH},
-    {source:'kerbol_orbit', target:'kerbol_surface', out: 67000, back: DV_MATCH},
-    
-    {source:'kerbin_capture', target:'eeloo_intercept', out: 1140, back: AEROBRAKE, plane_change: 1330},
-    {source:'eeloo_intercept', target:'eeloo_orbit', out: 1370, back: DV_MATCH},
-    {source:'eeloo_orbit', target:'eeloo_surface', out: 620, back: DV_MATCH},
-    
-    {source:'kerbin_capture', target:'eve_intercept', out: 90, back: AEROBRAKE, plane_change: 430},
-    {source:'eve_intercept', target:'eve_capture', out: AEROBRAKE, back: 80},
-    {source:'eve_capture', target:'eve_orbit', out: AEROBRAKE, back: 1330},
-    {source:'eve_orbit', target:'eve_surface', out: AEROBRAKE, back: 8000},
-    {source:'eve_capture', target:'gilly_intercept', out: 60, back: DV_MATCH},
-    {source:'gilly_intercept', target:'gilly_orbit', out: 410, back: DV_MATCH},
-    {source:'gilly_orbit', target:'gilly_surface', out: 30, back: DV_MATCH},
-    
-    {source:'kerbin_capture', target:'duna_intercept', out: 130, back: AEROBRAKE, plane_change: 10},
-    {source:'duna_intercept', target:'duna_capture', out: AEROBRAKE, back: 250},
-    {source:'duna_capture', target:'duna_orbit', out: AEROBRAKE, back: 360},
-    {source:'duna_orbit', target:'duna_surface', out: AEROBRAKE, back: 1450},
-    {source:'duna_capture', target:'ike_intercept', out: 30, back: DV_MATCH},
-    {source:'ike_intercept', target:'ike_orbit', out: 180, back: DV_MATCH},
-    {source:'ike_orbit', target:'ike_surface', out: 390, back: DV_MATCH},
-    
-    {source:'kerbin_capture', target:'jool_intercept', out: 980, back: AEROBRAKE, plane_change: 270},
-    {source:'jool_intercept', target:'jool_capture', out: AEROBRAKE, back: 160},
-    {source:'jool_capture', target:'jool_orbit', out: AEROBRAKE, back: 2810},
-    {source:'jool_orbit', target:'jool_surface', out: AEROBRAKE, back: 14000},
-    
-    {source:'jool_capture', target:'pol_intercept', out: 160, back: DV_MATCH, plane_change: 700},
-    {source:'pol_intercept', target:'pol_orbit', out: 820, back: DV_MATCH},
-    {source:'pol_orbit', target:'pol_surface', out: 130, back: DV_MATCH},
-    
-    {source:'jool_capture', target:'bop_intercept', out: 220, back: DV_MATCH, plane_change: 2440},
-    {source:'bop_intercept', target:'bop_orbit', out: 900, back: DV_MATCH},
-    {source:'bop_orbit', target:'bop_surface', out: 220, back: DV_MATCH},
-    
-    {source:'jool_capture', target:'tylo_intercept', out: 400, back: DV_MATCH},
-    {source:'tylo_intercept', target:'tylo_orbit', out: 1100, back: DV_MATCH},
-    {source:'tylo_orbit', target:'tylo_surface', out: 2270, back: DV_MATCH},
-    
-    {source:'jool_capture', target:'vall_intercept', out: 620, back: DV_MATCH},
-    {source:'vall_intercept', target:'vall_orbit', out: 910, back: DV_MATCH},
-    {source:'vall_orbit', target:'vall_surface', out: 860, back: DV_MATCH},
-    
-    {source:'jool_capture', target:'laythe_intercept', out: 930, back: DV_MATCH},
-    {source:'laythe_intercept', target:'laythe_orbit', out: 1070, back: DV_MATCH},
-    {source:'laythe_orbit', target:'laythe_surface', out: AEROBRAKE, back: 2900},
-]
-
-function node_data(node_id){
-    var ns = node_id.split('_')
-    return {
-        id: node_id,
-        system: ns[0],
-        state: ns[1],
-        label: ns[0] + '\n' + ns[1],
-        label_colour: $('<span>').append($('<span>', {text: ns[0], style:'color:'+PLANET_COLOUR[ns[0]]+';'}), $('<span>', {text: ' '+ns[1]})),
-        shape: ns[1] == 'surface' ? 'ellipse' : 'roundrectangle',
-        width: ns[1] == 'surface' ? '40' : '20',
-        height: ns[1] == 'surface' ? '40' : '20',
-    }
-}
 
 function hohmann(mass, start, target){
     // see https://en.wikipedia.org/wiki/Hohmann_transfer_orbit
@@ -171,17 +66,131 @@ function hohmann_exit(mass, start, target){
     )
 }
 
+function planet_name_to_node(planet_name){
+    // ensure planets have their default state
+    // kerbin -> 'kerbin_orbit'
+    if (planet_name.split('_').length == 1){
+        planet_name += '_orbit'
+    }
+    return planet_name
+}
+
+function node_data(node){
+    // defines the additional (e.g. rendering) data for any given node
+    var ns = node.id.split('_')
+    var output = _.extend(node, {
+        system: ns[0],
+        state: ns[1],
+        label: ns[0] + '\n' + ns[1],
+        label_colour: $('<span>').append(
+            $('<span>', {text: ns[0], style:'color:'+(node.colour || DEFAULT_COLOUR) +';'}),
+            $('<span>', {text: ' '+ns[1]})
+        ),
+        shape: ns[1] == 'surface' ? 'ellipse' : 'roundrectangle',
+        width: ns[1] == 'surface' ? '40' : '20',
+        height: ns[1] == 'surface' ? '40' : '20',
+    })
+    return output
+}
+
 function get_data(){
     var nodes = {}
     var edges = []
     
-    _.each(NODE_SOURCE, function(item){
-        // resolve DV match
+    // we want to add the n^2 sibling-sibling crosslinks for every possible transfer between orbits at the same level
+    // we can calculate the cost now, and search on it very rapidly later
+    var children = {}
+    var universe = UNIVERSE[CURRENT_UNIVERSE]
+    var bodies = universe.bodies
+    var edge_generators = []
+    
+    // add hierarchical SOI structure for nodes
+    _.each(bodies, function(item){
+        item.id = planet_name_to_node(item.name)
+        var this_data = node_data(item)
+        nodes[item.id] = {data: this_data}
+        
+        // for everything apart from Kerbol ...
+        if (!item.parent){ return }
+        item.parent_id = planet_name_to_node(item.parent)
+        
+        // we can calculate dv from orbit to the SOI
+        edge_generators.push({
+            source: item.id,
+            target: item.name + '_soi',
+            out: 42,
+            back: DV_MATCH
+        })
+        
+        // and from SOI to parent orbit
+        edge_generators.push({
+            source: item.name + '_soi',
+            target: item.parent_id,
+            out: 1234,
+            back: DV_MATCH
+        })
+        
+        // and every body has a surface ... (worth a punt, expecting overrides here)
+        edge_generators.push({
+            source: item.id,
+            target: item.name + '_surface',
+            out: 1234,
+            back: DV_MATCH
+        })
+        
+        // create our own temporary graph using this structure { k : [children] }
+        if (!_.has(children, item.parent_id)){
+            children[item.parent_id] = []
+        }
+        children[item.parent_id].push(item.name)
+    })
+    
+    // add those interplanetary crosslinks
+    _.each(children, function(siblings, parent_id){
+        if (siblings.length==1){ return } // early out
+        _.each(siblings, function(child){
+            _.each(siblings, function(other_child){
+                if (other_child == child){ return }
+                console.log('xlink', child, other_child)
+                // we can go to any child on the same level
+                // this is soi -> soi, but it takes less dv to go orbit -> soi
+                edge_generators.push({
+                    source: child+'_soi',
+                    target: other_child+'_soi',
+                    out: hohmann(
+                        nodes[parent_id].data.mass,
+                        nodes[planet_name_to_node(child)].data.sma,
+                        nodes[planet_name_to_node(other_child)].data.sma
+                    ),
+                    back: DV_MATCH,
+                    no_render: true
+                })
+            })
+        })
+    })
+    
+    // uniqueify our edges and apply overrides
+    var unique_edges = {}
+    _.each(edge_generators.concat(universe.edge_overrides), function(item){
+        unique_edges[[item.source, item.target].sort()] = item
+    })   
+    
+    console.log('edges to make:', edge_generators)
+    
+    _.each(unique_edges, function(item, key){
+        // resolve DV match, this is intended to stop duplication of dv inputs
         if (item.out==DV_MATCH){ item.out = item.back }
         if (item.back==DV_MATCH){ item.back = item.out }
     
-        nodes[item.source] = {data:node_data(item.source)}
-        nodes[item.target] = {data:node_data(item.target)}    
+        // auto-create new stub nodes
+        _.each([item.source, item.target], function(stub){
+            if (!_.has(nodes, stub)){
+                var stub_data = node_data({id: stub})
+                // try to update the colour by referencing our existing nodes
+                stub_data.colour = nodes[stub_data.system + '_orbit'].data.colour
+                nodes[stub] = {data:stub_data}
+            }  
+        })
         
         var any_aerobrake = (item.out == AEROBRAKE || item.back == AEROBRAKE)
         var no_braking = item.out||item.back
@@ -193,7 +202,7 @@ function get_data(){
             data: {
                 source: item.source,
                 target: item.target,
-                is_outbound: true,
+                no_render: true,
                 is_aerobrake: item.out == AEROBRAKE,
                 any_aerobrake: any_aerobrake,
                 dv: item.out,
@@ -206,7 +215,7 @@ function get_data(){
             data: {
                 source: item.target,
                 target: item.source,
-                is_outbound: false,
+                no_render: item.no_render,
                 is_aerobrake: item.back == AEROBRAKE,
                 any_aerobrake: any_aerobrake,
                 dv: item.back,
@@ -215,77 +224,10 @@ function get_data(){
             }
         })
     })
-    
-    return {nodes: _.values(nodes), edges: edges}
-}
 
-function body_data(item){
-    var data = item
-    data.id = item.name
-    return data
-}
-
-function get_data(){
-    var nodes = {}
-    var edges = []
-    var universe = 'ksp_extra' // just for now...
-    
-    // we want to add the n^2 sibling-sibling crosslinks for every possible transfer between orbits at the same level
-    // we can calculate the cost now, and search on it very rapidly later
-    var children = {}
-    
-    // add hierarchical SOI structure
-    _.each(BODIES[universe], function(item){
-        nodes[item.name] = {data: body_data(item)}
-        if (!item.parent){ return }
-        
-        // we can go there
-        edges.push({
-            data: {
-                source: item.parent,
-                target: item.name,
-                is_outbound: true,
-            }
-        })
-        
-        // we can get back
-        edges.push({
-            data: {
-                source: item.name,
-                target: item.parent,
-                is_outbound: false,
-            }
-        })
-        console.log('map', item.parent, item.name)
-        
-        // do our own children list
-        if (!_.has(children, item.parent)){
-            children[item.parent] = []
-        }
-        children[item.parent].push(item.name)
-    })
-    
-    // add those sibling crosslinks
-    _.each(children, function(siblings, parent){
-        if (siblings.length==1){ return } // early out
-        _.each(siblings, function(child){
-            _.each(siblings, function(other_child){
-                if (other_child == child){ return }
-                // we can go to any child on the same level
-                console.log('xlink', child, other_child)
-                edges.push({
-                    data: {
-                        source: child,
-                        target: other_child,
-                        is_outbound: false,
-                        dv: hohmann(nodes[child].data.mass, nodes[child].data.sma, nodes[other_child].data.sma)
-                    }
-                })
-            })
-        })
-    })
-    
-    return {nodes: _.values(nodes), edges: edges}
+    var output = {nodes: _.values(nodes), edges: edges}
+    console.log('nodes and edges', output)
+    return output
 }
 
 function calc_dv(edge){
@@ -334,9 +276,9 @@ function render_results(container, start, end, results){
 }
 
 function search_and_render(cy){
-    if (node_pair.length !=2){return}
-    var start = node_pair[0]
-    var end = node_pair[1]
+    if (node_path.length !=2){return}
+    var start = node_path[0]
+    var end = node_path[1]
     var out = search_graph(cy, start, end)
     render_results($('#output_out'), start, end, out)
 
@@ -358,16 +300,16 @@ function on_tap_handler(cy, evt){
     cy.nodes().unselect()
     cy.edges().unselect()
     if (pinned){
-        node_pair = []
-        node_pair.push(pinned)
+        node_path = []
+        node_path.push(pinned)
     }
-    node_pair.push(node)
-    if (node_pair.length < 2){
+    node_path.push(node)
+    if (node_path.length < 2){
         return
     }
-    if (node_pair.length > 2){
+    if (node_path.length > 2){
         // only keep the most recent point
-        node_pair = node_pair.slice(-1)
+        node_path = node_path.slice(-1)
     }
     search_and_render(cy)
 }
@@ -408,7 +350,7 @@ function init_buttons(CY){
         if (pinned){
             pinned = null
         } else {
-            pinned = node_pair[0]
+            pinned = node_path[0]
         }
         $('#pin').text('Pinned: ' + (pinned ? pinned.data('label') : 'none'))
     })
@@ -440,7 +382,7 @@ function init(){
     var style = cytoscape.stylesheet()
         .selector('node')
             .style({
-                'background-color': function(ele){ return PLANET_COLOUR[ele.data('system')] || DEFAULT_COLOUR},
+                'background-color': function(ele){ return ele.data('colour') || DEFAULT_COLOUR},
                 'label': function(ele){ return ele.data('label')},
                 'shape': function(ele){ return ele.data('shape')},
                 'width': function(ele){ return ele.data('width')},
@@ -458,8 +400,8 @@ function init(){
         .selector('edge')
             .style({
                 'width': '12px',
-                'display': function(ele){ return ele.data('is_outbound') ? 'element' : 'none' },
-                'line-color': function(ele){ return PLANET_COLOUR[ele.target().data('system')] || DEFAULT_COLOUR},
+                'display': function(ele){ return ele.data('no_render') ? 'none' : 'element'},
+                'line-color': function(ele){ return ele.target().data('colour') || DEFAULT_COLOUR},
                 'label': function(ele){ return ele.data('no_braking') + (ele.data('any_aerobrake') ? ' +A' : '' )},
                 'color': '#ddd',
                 'line-style': 'solid',
@@ -508,7 +450,7 @@ function init(){
     
     var default_node = CY.$(DEFAULT_NODE_SELECTOR)
     default_node.select()
-    node_pair.push(default_node)
+    node_path.push(default_node)
     
     init_buttons(CY)
 }

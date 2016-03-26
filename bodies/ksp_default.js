@@ -1,3 +1,8 @@
+/*
+AEROBRAKE: this direction can be aerobraked
+DV_MATCH: this direction is the same as the other one (exists to reduce data discrepancies)
+*/
+
 UNIVERSE.ksp_default = {
     // create or override nodes by describing their bidirectional edges
     edge_overrides: [
