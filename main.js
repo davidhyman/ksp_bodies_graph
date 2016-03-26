@@ -4,10 +4,11 @@ $(document).ready(function(){
 })
 
 const G = 6.674e-11
-const SUICIDE_BURN_MARGIN = 1.03
+const SUICIDE_BURN_MARGIN = 1.03 // a fudge factor for no-atmo landings
 const AEROBRAKE = false // the value of 'dv' to signal aerobraking
 const DV_MATCH = null // the value of 'dv' to signal matching the opposing direction
-const DEFAULT_NODE_SELECTOR = '#kerbol_surface'
+const DEFAULT_NODE_SELECTOR = '#kerbin_surface'
+const ROOT_NODE = '#kerbol_surface'
 
 // new body definitions will be loaded into this object
 var CURRENT_UNIVERSE = 'ksp_extra'
@@ -127,7 +128,7 @@ function get_data(){
         if (!item.parent){ return }
         item.parent_id = planet_name_to_node(item.parent)
         
-        // we can calculate dv from orbit to the SOI
+        // create SOI: we can calculate dv from orbit to the SOI
         edge_generators.push({
             source: item.id,
             target: item.name + '_soi',
@@ -139,7 +140,7 @@ function get_data(){
             back: DV_MATCH
         })
         
-        // and every body has a surface ... (worth a punt, expecting overrides for atmo values)    
+        // create surface: every body has one, though expecting overrides for atmo values
         edge_generators.push({
             source: item.id,
             target: item.name + '_surface',
@@ -157,14 +158,27 @@ function get_data(){
     // add those interplanetary crosslinks
     _.each(children, function(siblings, parent_id){
         _.each(siblings, function(child){
+            var child_node = nodes[planet_name_to_node(child)]
             // every child from SOI to the parent orbit
             edge_generators.push({
                 source: child + '_soi',
                 target: nodes[parent_id].data.name + '_orbit',
                 out: hohmann_enter(
                     nodes[parent_id].data.mass,
-                    nodes[child + '_orbit'].data.sma,
+                    child_node.data.sma - child_node.data.soi,
                     nodes[parent_id].data.orbit                 
+                ),
+                back: DV_MATCH
+            })
+            
+            // but every child can also get to the parent's SOI more cheaply
+            edge_generators.push({
+                source: child + '_soi',
+                target: nodes[parent_id].data.name + '_soi',
+                out: hohmann_enter(
+                    nodes[parent_id].data.mass,
+                    child_node.data.sma + child_node.data.soi,
+                    nodes[parent_id].data.soi                
                 ),
                 back: DV_MATCH
             })
@@ -175,13 +189,14 @@ function get_data(){
                 if (other_child == child){ return }
                 // we can go to any child on the same level
                 // this is soi -> soi, but it takes less dv to go orbit -> soi
+                var other_child_node = nodes[planet_name_to_node(other_child)]
                 edge_generators.push({
-                    source: child+'_orbit',
+                    source: child+'_soi',
                     target: other_child+'_soi',
                     out: hohmann(
                         nodes[parent_id].data.mass,
-                        nodes[planet_name_to_node(child)].data.sma,
-                        nodes[planet_name_to_node(other_child)].data.sma
+                        child_node.data.sma,
+                        other_child_node.data.sma
                     ).total,
                     back: DV_MATCH,
                     no_render: false
@@ -457,14 +472,14 @@ function init(){
             minNodeSpacing: 2,
             equidistant: false,
             concentric: function( node ){
-                var x = search_graph(CY, CY.$(DEFAULT_NODE_SELECTOR), node);
+                var x = search_graph(CY, CY.$(ROOT_NODE), node);
                 return -x.path.length
             },
             levelWidth: function( nodes ){ return 3},
         },
         'tree': {
             name: 'breadthfirst',
-            roots: CY.$(DEFAULT_NODE_SELECTOR),
+            roots: CY.$(ROOT_NODE),
         }
     }
     LAYOUT = 1
