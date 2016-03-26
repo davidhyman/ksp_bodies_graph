@@ -190,8 +190,30 @@ function get_data(){
                 // we can go to any child on the same level
                 // this is soi -> soi, but it takes less dv to go orbit -> soi
                 var other_child_node = nodes[planet_name_to_node(other_child)]
+                var start = Math.min(
+                    child_node.data.sma + child_node.data.soi,
+                    other_child_node.data.sma + other_child_node.data.soi
+                )
+                var end = Math.max(
+                    child_node.data.sma - child_node.data.soi,
+                    other_child_node.data.sma - other_child_node.data.soi
+                )
                 edge_generators.push({
                     source: child+'_soi',
+                    target: other_child+'_soi',
+                    out: hohmann(
+                        nodes[parent_id].data.mass,
+                        start,
+                        end
+                    ).total,
+                    back: DV_MATCH,
+                    no_render: false,
+                    gravity_assist: true
+                })
+                
+                // fine, lets do orbit to soi
+                edge_generators.push({
+                    source: child+'_orbit',
                     target: other_child+'_soi',
                     out: hohmann(
                         nodes[parent_id].data.mass,
@@ -199,7 +221,8 @@ function get_data(){
                         other_child_node.data.sma
                     ).total,
                     back: DV_MATCH,
-                    no_render: false
+                    no_render: false,
+                    gravity_assist: true
                 })
             })
         })
@@ -240,6 +263,7 @@ function get_data(){
                 source: item.source,
                 target: item.target,
                 no_render: true,
+                gravity_assist: item.gravity_assist,
                 is_aerobrake: item.out == AEROBRAKE,
                 any_aerobrake: any_aerobrake,
                 dv: item.out,
@@ -253,6 +277,7 @@ function get_data(){
                 source: item.target,
                 target: item.source,
                 no_render: item.no_render,
+                gravity_assist: item.gravity_assist,
                 is_aerobrake: item.back == AEROBRAKE,
                 any_aerobrake: any_aerobrake,
                 dv: item.back,
@@ -268,15 +293,19 @@ function get_data(){
 }
 
 function calc_dv(edge){
+    var edge_data = edge.data()
     // substitute our assumed minimum dv value for aerobraking manouvres
-    var aero_best = edge.data('is_aerobrake') ? AEROBRAKE_DVS[AEROBRAKE_DV] : edge.data('dv')
+    var aero_best = edge_data['is_aerobrake'] ? AEROBRAKE_DVS[AEROBRAKE_DV] : edge.data('dv')
     
     // save our calculations on the edges so we can refer to them later
-    edge.data()['best'] = aero_best
-    edge.data()['entry_only'] = edge.target().data('state')=='surface' ? aero_best : edge.data('no_braking')
-    var dv = edge.data(AERO_MODES[AERO_MODE].key)
+    edge_data['best'] = aero_best
+    edge_data['entry_only'] = edge.target().data('state')=='surface' ? aero_best : edge_data['no_braking']
+    var dv = edge_data[AERO_MODES[AERO_MODE].key]
     if (PLANE_CHANGE){
-        dv += edge.data('plane_change')
+        dv += edge_data['plane_change']
+    }
+    if (true && edge_data['gravity_assist']){
+        dv += 200
     }
     return dv
 }
@@ -545,11 +574,20 @@ function test(){
             expect: 870
         },
     ]
+    
+    var c = []
     _.each(tests, function(params){
         var t = search_graph(CY, CY.$(params.from), CY.$(params.to))
+        var p = Math.round(100 * ((t.weight - params.expect) / t.weight))
+        c.push(Math.abs(p))
         console.log('test', params, t.weight,
                     'error: ' + Math.round(t.weight - params.expect),
-                    Math.round(100 * ((t.weight - params.expect) / t.weight)) + '%'
+                    p + '%'
         )
     })
+    console.log(
+        _.reduce(c, function(memo, num){ return Math.max(memo, num); }, 0),
+        _.reduce(c, function(memo, num){ return memo + num; }, 0),
+        _.reduce(c, function(memo, num){ return memo + (num * num); }, 0)
+    )
 }
