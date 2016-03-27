@@ -1,4 +1,4 @@
-$(document).ready(function(){
+$(window).load(function(){
     init()
     test()
 })
@@ -9,10 +9,11 @@ const AEROBRAKE = false // the value of 'dv' to signal aerobraking
 const DV_MATCH = null // the value of 'dv' to signal matching the opposing direction
 const DEFAULT_NODE_SELECTOR = '#kerbin_surface'
 const ROOT_NODE = '#kerbin_geostationary'
+const DEFAULT_COLOUR = '#aaa'
 
 // new body definitions will be loaded into this object
 var CURRENT_UNIVERSE = 'ksp_extra'
-var UNIVERSE = {}
+var UNIVERSE = UNIVERSE || {}
 
 // number of metres used for low orbit buffer (= radius + atmosphere + low_orbit_buffer)
 const LOW_ORBIT_BUFFER = 10000
@@ -35,9 +36,6 @@ var GRAVITY_ASSIST = true
 // our start and end points
 var node_path = []
 var pinned = null
-
-// planet colours
-const DEFAULT_COLOUR = '#aaa'
 
 function orbit_to_surface(item){
     // speed of the planet surface - we must match this or be destroyed
@@ -89,15 +87,17 @@ function system_name_to_node(planet_name){
     return planet_name
 }
 
-function node_data(node){
+function node_data(node, all_nodes){
     // defines the additional (e.g. rendering) data for any given node
     var ns = node.id.split('_')
+    var system_node = all_nodes[system_name_to_node(ns[0])]
+    var colour = node.colour || (system_node ? system_node.data.colour : DEFAULT_COLOUR)
     var output = _.extend(node, {
         system: ns[0],
         state: ns[1],
         label: ns[0] + '\n' + ns[1],
         label_colour: $('<span>').append(
-            $('<span>', {text: ns[0], style:'color:'+(node.colour || DEFAULT_COLOUR) +';'}),
+            $('<span>', {text: ns[0], style:'color:'+colour+';'}),
             $('<span>', {text: ' '+ns[1]})
         ),
         shape: ns[1] == 'surface' ? 'ellipse' : 'roundrectangle',
@@ -122,7 +122,7 @@ function get_data(){
     // add hierarchical SOI structure for nodes
     _.each(bodies, function(item){
         item.id = system_name_to_node(item.name)
-        var this_data = node_data(item)
+        var this_data = node_data(item, nodes)
         nodes[item.id] = {data: this_data}
         
         // for everything apart from Kerbol ...
@@ -247,7 +247,7 @@ function get_data(){
         // auto-create new stub nodes
         _.each([item.source, item.target], function(stub){
             if (!_.has(nodes, stub)){
-                var stub_data = node_data({id: stub})
+                var stub_data = node_data({id: stub}, nodes)
                 // try to update the colour by referencing our existing nodes
                 stub_data.colour = nodes[system_name_to_node(stub_data.system)].data.colour
                 nodes[stub] = {data:stub_data}
