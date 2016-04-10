@@ -44,16 +44,16 @@ M.hohmann_exit = function(mass, start, target){
 M.calc_dv = function(edge, force_raw){
     var edge_data = edge.data()
     // substitute our assumed minimum dv value for aerobraking manouvres
-    var aero_best = edge_data['is_aerobrake'] ? AEROBRAKE_DVS[AEROBRAKE_DV] : edge.data('dv')
+    var aero_best = edge_data['is_aerobrake'] ? UI.options.aerobrake_dv_min.current_obj : edge.data('dv')
     
     // save our calculations on the edges so we can refer to them later
     edge_data['best'] = aero_best
     edge_data['entry_only'] = edge.target().data('state')=='surface' ? aero_best : edge_data['no_braking']
-    var dv = edge_data[AERO_MODES[AERO_MODE].key]
-    if (PLANE_CHANGE){
-        dv += edge_data['plane_change']
-    }
-    if (!force_raw && !GRAVITY_ASSIST && (edge.target().data('system') != edge.source().data('system'))){
+    var dv = edge_data.dv //[UI.options.aerobrake_dv_min.current_obj]
+//    if (UI.options.plane_change.current_obj){
+//        dv += edge_data['plane_change']
+//    }
+    if (!force_raw && (edge.target().data('system') != edge.source().data('system'))){
         dv += 2e6 // weight SOI transitions heavily
     }
     return dv

@@ -1,13 +1,17 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <script>UNIVERSE = {}</script>
+    <script>
+        UNIVERSE = {};
+        const AEROBRAKE = false; // the value of 'dv' to signal aerobraking
+        const DV_MATCH = null; // the value of 'dv' to signal matching the opposing direction
+    </script>
     <script src="jquery-2.2.1.min.js"></script>
+    <script src="main.js" async></script>
     <script src="cytoscape.min.js" async></script>
     <script src="underscore-min.js" async></script>
     <script src="ksp_maths.js" async></script>
     <script src="ui.js" async></script>
-    <script src="main.js" async></script>
     <script src="test.js" async></script>
     <script src="bodies/ksp_default.js" async></script>
     <link rel="stylesheet" type="text/css" href="style.css">

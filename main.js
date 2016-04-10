@@ -5,17 +5,16 @@ $(window).load(function(){
 
 const G = 6.674e-11
 const SUICIDE_BURN_MARGIN = 1.03 // a fudge factor for no-atmo landings
-const AEROBRAKE = false // the value of 'dv' to signal aerobraking
-const DV_MATCH = null // the value of 'dv' to signal matching the opposing direction
+
 const DEFAULT_NODE_SELECTOR = '#kerbin_surface'
 const ROOT_NODE = '#kerbin_geostationary'
 const DEFAULT_COLOUR = '#aaa'
 
-var CY = null
-var LAYOUT_SETTINGS = null
-
 // number of metres used for low orbit buffer (= radius + atmosphere + low_orbit_buffer)
 const LOW_ORBIT_BUFFER = 10000
+
+var CY = null
+var LAYOUT_SETTINGS = null
 
 // our start and end points
 var node_path = []
@@ -58,7 +57,7 @@ function get_data(){
     // we want to add the n^2 sibling-sibling crosslinks for every possible transfer between orbits at the same level
     // we can calculate the cost now, and search on it very rapidly later
     var children = {}
-    var universe = UI.options.universe.current_obj
+    var universe = UI.options.universe.current_obj.data
     var bodies = universe.bodies
     var edge_generators = []
     
@@ -191,7 +190,7 @@ function get_data(){
         _.each([item.source, item.target], function(stub){
             if (!_.has(nodes, stub)){
                 var stub_data = node_data({id: stub}, nodes)
-                // try to update the colour by referencing our existing nodes
+                // update the colour by referencing our existing nodes
                 stub_data.colour = nodes[system_name_to_node(stub_data.system)].data.colour
                 nodes[stub] = {data:stub_data}
             }  
@@ -199,8 +198,8 @@ function get_data(){
         
         var any_aerobrake = (item.out == AEROBRAKE || item.back == AEROBRAKE)
         var no_braking = item.out||item.back
-        var out = item.out == AEROBRAKE ? AEROBRAKE_DV : item.out
-        var back = item.back == AEROBRAKE ? AEROBRAKE_DV : item.back
+        var out = item.out == AEROBRAKE ? UI.options.aerobrake_dv_min.current_obj : item.out
+        var back = item.back == AEROBRAKE ? UI.options.aerobrake_dv_min.current_obj : item.back
         
         // out
         edges.push({
@@ -238,8 +237,6 @@ function get_data(){
     return output
 }
 
-
-
 function search_graph(cy, source, target){
     var dij = cy.elements().dijkstra(source, M.calc_dv, true)
     var path = dij.pathTo(target)
@@ -265,8 +262,8 @@ function render_results(container, start, end, results){
         row.append(
             $('<td>', {html: pth.target().data('label_colour')[0].outerHTML}),
             $('<td>', {text: pth.data('is_aerobrake') ? pth.data('no_braking') + ' A' : '', title: 'dv without aerobraking'}),
-            $('<td>', {text: PLANE_CHANGE && pth.data('plane_change') ? pth.data('plane_change') + ' P' : '', title: 'extra dv for plane change'}),
-            $('<td>', {text: Math.round(pth.data(AERO_MODES[AERO_MODE].key)), class:'dv_cells'})
+//            $('<td>', {text: PLANE_CHANGE && pth.data('plane_change') ? pth.data('plane_change') + ' P' : '', title: 'extra dv for plane change'}),
+            $('<td>', {text: Math.round(pth.data(UI.options.aerobrake_dv_min.current_obj)), class:'dv_cells'})
         )
         tab.append(row)
     })
@@ -300,7 +297,7 @@ function on_tap_handler(cy, evt){
     if (!node) {return}
     cy.nodes().unselect()
     cy.edges().unselect()
-    if (pinned){
+    if (UI.options.pin.current_key && pinned){
         node_path = []
         node_path.push(pinned)
     }
@@ -326,7 +323,8 @@ function init(){
     LAYOUT_SETTINGS = [
         {
             key: 'spring',
-            data: {
+            data: function(){
+                return {
                 name: 'cose',
                 gravity: 0,
                 numIter: 12000,
@@ -335,11 +333,12 @@ function init(){
                 nodeRepulsion: function( node ){ return 100000; },
                 idealEdgeLength: function( edge ){ return 3},
                 edgeElasticity: function( edge ){ return 200*(edge.target().degree() + edge.source().degree()) },
-            },
+            }},
         },
         {
             key: 'round',
-            data: {
+            data: function(){
+                return {
                 name: 'concentric',
                 startAngle: Math.PI * 9/8,
                 sweep: Math.PI * 6/8,
@@ -350,25 +349,27 @@ function init(){
                     return -x.path.length
                 },
                 levelWidth: function( nodes ){ return 3},
-            },
+            }},
         },
         {
             key: 'tree',
-            data: {
+            data: function(){
+                return {
                 name: 'breadthfirst',
                 roots: CY.$(ROOT_NODE),
-            }
+            }},
         }
     ]
     
     CY.on('tap', 'node', function(e) {on_tap_handler(CY,e)})
     CY.style(UI.apply_cy_style(cytoscape.stylesheet()))
-    
-    var default_node = CY.$(DEFAULT_NODE_SELECTOR)
-    default_node.select()
-    node_path.push(default_node)
-    
     UI.init_buttons(CY)
-    
     CY.add(get_data())
+    CY.layout(UI.options.layout.current_obj.data())
+
+    if (UI.options.pin.current_key){
+        var default_node = CY.$(DEFAULT_NODE_SELECTOR)
+        default_node.select()
+        node_path.push(default_node)
+    }
 }

@@ -68,12 +68,13 @@ UI.init_button = function(container, item){
         class: 'button noselect',
     }).on(
         'click', function(){
+            item.button = $(this)
             item.index = (item.index + 1) % item.options.length
             UI.update_button_key(item)
-            $(this).text(UI.get_button_text(item))
-            $(this).attr('title', item.help + '\n' + item.current_obj.title)
+            item.button.text(UI.get_button_text(item))
+            item.button.attr('title', item.help + '\n' + item.current_obj.title || '')
             UI.save_to_store()
-            item.onclick()
+            item.onclick(item)
         }
     ))
 }
@@ -101,7 +102,7 @@ UI.init_buttons = function(CY){
             options: LAYOUT_SETTINGS,
             help: 'Graph layout methods',
             onclick: function(item){
-                CY.layout(item.data)
+                CY.layout(item.current_obj.data())
                 CY.edges().style({opacity:item.current_key == 'round' ? 0.2 : 1})
             },
         },
@@ -144,22 +145,14 @@ UI.init_buttons = function(CY){
         pin: {
             index: 0,
             name: 'Pin',
+            options: [{key: true, friendly: 'pinned'}, {key: false, friendly: 'none'}],
             help: 'Pins your current source node',
-            onclick: function(){
+            onclick: function(item){
                 if (pinned){
                     pinned = null
                 } else {
                     pinned = node_path[0]
                 }
-            },
-        },
-        gravity: {
-            index: 0,
-            options: [{key: true, friendly: 'on'}, {key: false, friendly: 'off'}],
-            name: 'Gravity',
-            help: 'Uses SOI hops to reduce DV usage',
-            onclick: function(){
-                search_and_render(CY)
             },
         },
         help: {
