@@ -118,6 +118,36 @@ UNIVERSE.ksp_full =  {
             soi: 1.1908294e8,
             parent: 'kerbol',
         },
+        {
+            name: 'eve',
+            colour: '#a0a',
+            mass: 1.2244127e23,
+            sma: 9832684544,
+            rotational_period: 80500,
+            radius: 700000,
+            soi: 85109365,
+            parent: 'kerbol',
+        },
+        {
+            name: 'gilly',
+            colour: '#faf',
+            mass: 1.2420512e17,
+            sma: 31500000,
+            rotational_period: 28255,
+            radius: 13000,
+            soi: 126123.27,
+            parent: 'eve',
+        },
+        {
+            name: 'jool',
+            colour: '#060',
+            mass: 4.2332635e24,
+            sma: 68773560320,
+            rotational_period: 1047.2,
+            radius: 6000000,
+            soi: 2.4559852e9,
+            parent: 'kerbol',
+        },
     ]
 }
 
