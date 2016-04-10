@@ -1,6 +1,6 @@
 function test(){
     var tests = [
-        { // surface checks
+        { // surface to surface checks
             from: '#kerbin_surface',
             to: '#mun_surface',
             expect: 5150
@@ -29,6 +29,11 @@ function test(){
             from: '#kerbin_surface',
             to: '#mun_surface',
             expect: 5150
+        },
+        {
+            from: '#kerbin_surface',
+            to: '#dres_surface',
+            expect: 6680
         },
         { // orbit checks
             from: '#mun_orbit',
@@ -64,8 +69,8 @@ function test(){
         )
     })
     console.log(
-        'max abs', _.reduce(c, function(memo, num){ return Math.max(memo, num); }, 0),
+        '% sums: max', _.reduce(c, function(memo, num){ return Math.max(memo, num); }, 0),
         'total', _.reduce(c, function(memo, num){ return memo + num; }, 0),
-        'sum squares', _.reduce(c, function(memo, num){ return memo + (num * num); }, 0)
+        'rms', Math.round(1000*Math.sqrt(_.reduce(c, function(memo, num){ return memo + (num * num); }, 0)))/1000
     )
 }

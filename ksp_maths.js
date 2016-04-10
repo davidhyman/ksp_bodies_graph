@@ -49,7 +49,7 @@ M.calc_dv = function(edge, force_raw){
     // save our calculations on the edges so we can refer to them later
     edge_data['best'] = aero_best
     edge_data['entry_only'] = edge.target().data('state')=='surface' ? aero_best : edge_data['no_braking']
-    var dv = edge_data.dv //[UI.options.aerobrake_dv_min.current_obj]
+    var dv = edge_data[UI.options.aerobrake.current_key]
     if (UI.options.plane_change.current_key){
         dv += edge_data['plane_change']
     }

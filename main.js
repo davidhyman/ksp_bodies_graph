@@ -7,7 +7,7 @@ const G = 6.674e-11
 const SUICIDE_BURN_MARGIN = 1.03 // a fudge factor for no-atmo landings
 
 const DEFAULT_NODE_SELECTOR = '#kerbin_surface'
-const ROOT_NODE = '#kerbin_geostationary'
+const ROOT_NODE = '#kerbin_surface'
 const DEFAULT_COLOUR = '#aaa'
 
 // number of metres used for low orbit buffer (= radius + atmosphere + low_orbit_buffer)
@@ -87,7 +87,7 @@ function get_data(){
                 this_data.mass,
                 this_data.orbit,
                 this_data.soi
-            ).enter,
+            ).total,
             back: DV_MATCH
         })
             
@@ -106,9 +106,9 @@ function get_data(){
             edge_generators.push({
                 source: child + '_soi',
                 target: nodes[parent_id].data.name + '_orbit',
-                out: M.hohmann_enter(
+                out: M.hohmann_exit( // no circularisation burn
                     nodes[parent_id].data.mass,
-                    child_node.data.sma - child_node.data.soi,
+                    child_node.data.sma + child_node.data.soi,
                     nodes[parent_id].data.orbit                 
                 ),
                 back: DV_MATCH
@@ -118,7 +118,7 @@ function get_data(){
             edge_generators.push({
                 source: child + '_soi',
                 target: nodes[parent_id].data.name + '_soi',
-                out: M.hohmann_enter(
+                out: M.hohmann_enter( // no circularisation burn
                     nodes[parent_id].data.mass,
                     child_node.data.sma + child_node.data.soi,
                     nodes[parent_id].data.soi                

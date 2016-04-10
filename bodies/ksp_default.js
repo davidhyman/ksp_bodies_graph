@@ -10,8 +10,6 @@ UNIVERSE.ksp_default = {
     edge_overrides: [
         {source:'kerbin_orbit', target:'kerbin_geostationary', out: 1115, back: AEROBRAKE},
         {source:'kerbin_surface', target:'kerbin_orbit', out: 3400, back: AEROBRAKE},
-        //{source:'mun_orbit', target:'mun_surface', out: 580, back: DV_MATCH},
-        //{source:'minmus_orbit', target:'minmus_surface', out: 180, back: DV_MATCH},
         {source:'kerbol_orbit', target:'kerbol_surface', out: 67000, back: DV_MATCH},
         {source:'duna_orbit', target:'duna_surface', out: AEROBRAKE, back: 1450},
     ],
@@ -89,7 +87,6 @@ UNIVERSE.ksp_default = {
         },
     ]
 }
-
 
 UNIVERSE.ksp_extra =  {
     friendly: 'Extra',
