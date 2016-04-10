@@ -20,16 +20,16 @@
 <div id="content">
     <div id="wat" class="black_transparent">
         <h1>KSP delta v interactive map</h1>
-        This tool will estimate the delta v requirements to get around the Kerbal Universe.
-        <br>
+        This tool will estimate the delta v requirements to get around the Kerbal Universe. Right now this uses simple Hohmann transfers, and some overrides for planets with atmosphere.
+        <p>
+        Pinning: Click to unpin, pick a route and then pin again - now you can select destinations with a single click.
+        </p>
         Values you can tweak:
         <ul>
-        <li>Aero braking: always, never, or only on entry (orbit -> surface).</li>
-        <li>Min braking dv: a flat rate cost for using burns to control your aero braking.</li>
+        <li>Aero braking: assumes you have sufficient heat capacity / ablatives / parachutes.</li>
+        <li>Min braking dv: an additional flat rate cost for using burns to control your aero braking.</li>
         <li>Plane changes: if you want to land on planetary equators, instead of 'anywhere', you'll want to take this into account.</li>
-        <li>Pin: pin your start location. Click to unpin, pick a route and then pin again - now you can select destinations with a single click.</li>
         </ul>
-        
         Non-tweakable assumptions and their liability to over (+) or under (-) estimate:
         <ul>
         <li>(-) Some burns are assumed not to be circularised e.g. child soi -> parent orbit, child soi -> parent soi.</li>

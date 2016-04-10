@@ -110,7 +110,7 @@ UI.init_buttons = function(CY){
             index: 0,
             name: 'Aero',
             options: [
-                {key: 'best', friendly: 'perfect', title: 'Optimal aero braking used on every manouvre'}, 
+//                {key: 'best', friendly: 'perfect', title: 'Optimal aero braking used on every manouvre'}, 
                 {key: 'entry_only', friendly: 'on entry', title: 'Only aero brake from orbit to surface'},
                 {key: 'no_braking', friendly: 'never', title: 'Never aero brake'},
             ],
