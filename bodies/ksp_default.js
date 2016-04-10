@@ -4,6 +4,8 @@ DV_MATCH: this direction is the same as the other one (exists to reduce data dis
 */
 
 UNIVERSE.ksp_default = {
+    // a nice name
+    friendly: 'Default',
     // create or override nodes by describing their bidirectional edges
     edge_overrides: [
         {source:'kerbin_orbit', target:'kerbin_geostationary', out: 1115, back: AEROBRAKE},
@@ -91,6 +93,7 @@ UNIVERSE.ksp_default = {
 
 
 UNIVERSE.ksp_extra =  {
+    friendly: 'Extra',
     edge_overrides: [
         ...UNIVERSE.ksp_default.edge_overrides,
     ],

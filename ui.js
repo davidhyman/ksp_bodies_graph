@@ -1,5 +1,7 @@
 UI = {}
 
+UI.options = null
+
 UI.apply_cy_style = function(cy_stylesheet){
     return cy_stylesheet
         .selector('node')
@@ -38,62 +40,163 @@ UI.apply_cy_style = function(cy_stylesheet){
             })
 }
 
-UI.init_buttons = function(CY){
-    $('#layout').click(function(){
-        // iterates the layouts
-        LAYOUT = (LAYOUT + 1) % LAYOUTS.length
-        $('#layout').text('Layout: ' + LAYOUTS[LAYOUT])
-        CY.layout(LAYOUT_SETTINGS[LAYOUTS[LAYOUT]])
-        // too cluttered with edges
-        CY.edges().style({opacity:LAYOUTS[LAYOUT] == 'round' ? 0.2 : 1})
-    })
-      
-    $('#dv_mode').click(function(){
-        // iterates the aero mode
-        AERO_MODE = (AERO_MODE + 1) % AERO_MODES.length
-        $('#dv_mode').text('Aero: ' + AERO_MODES[AERO_MODE].friendly).prop('title',  AERO_MODES[AERO_MODE].title)
-        search_and_render(CY)
-    })
-    
-    $('#aero_dv').click(function(){
-        // iterates the aero dv assumption
-        AEROBRAKE_DV = (AEROBRAKE_DV + 1) % AEROBRAKE_DVS.length
-        $('#aero_dv').text('Min. braking dv: ' + AEROBRAKE_DVS[AEROBRAKE_DV])
-        search_and_render(CY)
-    })
-    
-    $('#plane_change').click(function(){
-        // iterates the plane change dv inclusion
-        PLANE_CHANGE = !PLANE_CHANGE
-        $('#plane_change').text('Plane: ' + (PLANE_CHANGE ? 'all' : 'none'))
-        search_and_render(CY)
-    })
-    
-    $('#gravity_assist').click(function(){
-        // iterates the plane change dv inclusion
-        GRAVITY_ASSIST = !GRAVITY_ASSIST
-        $('#gravity_assist').text('Gravity: ' + (GRAVITY_ASSIST ? 'assist' : 'none'))
-        search_and_render(CY)
-    })
-    
-    $('#pin').click(function(){
-        // pins a node
-        if (pinned){
-            pinned = null
-        } else {
-            pinned = node_path[0]
+UI.get_button_text = function(item){
+    // make text for the button
+    if (!item.options.length){
+        return item.name
+    }
+    var value = item.options[item.index]
+    return item.name + ': ' + (value.friendly || value.key)
+}
+
+UI.update_button_key = function(item){
+    // current key is more useful than the index
+    if (!item.options.length){
+        item.current_key = ''
+        item.current_obj = {}
+        return
+    }
+    item.current_key = item.options[item.index].key
+    item.current_obj = item.options[item.index]
+}
+
+UI.init_button = function(container, item){
+    UI.update_button_key(item)
+    container.append($('<div>', {
+        text: UI.get_button_text(item),
+        title: item.help,
+        class: 'button noselect',
+    }).on(
+        'click', function(){
+            item.index = (item.index + 1) % item.options.length
+            UI.update_button_key(item)
+            $(this).text(UI.get_button_text(item))
+            $(this).attr('title', item.help + '\n' + item.current_obj.title)
+            UI.save_to_store()
+            item.onclick()
         }
-        $('#pin').text('Pin: ' + (pinned ? pinned.data('label') : 'none'))
+    ))
+}
+
+UI.init_buttons = function(CY){
+    UI.options = {
+        universe: {
+            index: 0,
+            name: 'Universe',
+            options: _.map(UNIVERSE, function(v, k){ 
+                return {
+                    friendly: v.friendly,
+                    key: k,
+                    data: v,
+                }
+            }),
+            help: 'Your current universe',
+            onclick: function(item){
+                window.location.reload()
+            },
+        },
+        layout: {
+            index: 0,
+            name: 'Layout',
+            options: LAYOUT_SETTINGS,
+            help: 'Graph layout methods',
+            onclick: function(item){
+                CY.layout(item.data)
+                CY.edges().style({opacity:item.current_key == 'round' ? 0.2 : 1})
+            },
+        },
+        aerobrake: {
+            index: 0,
+            name: 'Aero',
+            options: [
+                {key: 'best', friendly: 'perfect', title: 'Optimal aero braking used on every manouvre'}, 
+                {key: 'entry_only', friendly: 'on entry', title: 'Only aero brake from orbit to surface'},
+                {key: 'no_braking', friendly: 'never', title: 'Never aero brake'},
+            ],
+            help: 'Delta-V aerobraking assumptions',
+            onclick: function(){
+                search_and_render(CY)
+            },
+        },
+        aerobrake_dv_min: {
+            index: 0,
+            name: 'Min. braking dv',
+            options: [
+                {key: 0},
+                {key: 50},
+                {key: 100},
+                {key: 200},
+                {key: 400},
+            ],
+            help: 'Assumed minimum delta v needed for any aerobraking manouvre',
+            onclick: function(item){
+                search_and_render(CY)
+            },
+        },
+//        plane: {
+//            index: 0,
+//            name: 'Plane',
+//            help: 'Plane changes align your vessel with the planet rotation, but is often expensive',
+//            onclick: function(){
+//                search_and_render(CY)
+//            },
+//        },
+        pin: {
+            index: 0,
+            name: 'Pin',
+            help: 'Pins your current source node',
+            onclick: function(){
+                if (pinned){
+                    pinned = null
+                } else {
+                    pinned = node_path[0]
+                }
+            },
+        },
+        gravity: {
+            index: 0,
+            options: [{key: true, friendly: 'on'}, {key: false, friendly: 'off'}],
+            name: 'Gravity',
+            help: 'Uses SOI hops to reduce DV usage',
+            onclick: function(){
+                search_and_render(CY)
+            },
+        },
+        help: {
+            index: 0,
+            name: 'Help',
+            help: 'What is this all about?',
+            onclick: function(){
+                $('#wat,#outputs').toggle()
+            },
+        },
+    }
+    
+    UI.load_from_store()
+    
+    var controls = $('#controls')
+    _.each(UI.options, function(item){
+        item.options = item.options || []
+        UI.init_button(controls, item)
     })
     
-    $('#help, #close_help').click(function(){
+    $('#close_help').click(function(){
         $('#wat,#outputs').toggle()
     })
-    
-    $('#pin').click()
-    $('#aero_dv').click()
-    $('#dv_mode').click()
-    $('#plane_change').click()
-    $('#layout').click()
-    $('#gravity_assist').click()
+}
+
+UI.save_to_store = function(){
+    var persist = {}
+    _.each(UI.options, function(v, k){
+        persist[k] = v.index
+    })
+    console.log(persist)
+    window.localStorage.setItem('bodies_config', JSON.stringify(persist))    
+}
+
+UI.load_from_store = function(){
+    var loaded = JSON.parse(window.localStorage.getItem('bodies_config') || '{}')
+    _.each(loaded, function(v, k){
+        (UI.options[k] || {})['index'] = v
+    })
 }

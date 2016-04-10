@@ -11,27 +11,11 @@ const DEFAULT_NODE_SELECTOR = '#kerbin_surface'
 const ROOT_NODE = '#kerbin_geostationary'
 const DEFAULT_COLOUR = '#aaa'
 
-// new body definitions will be loaded into this object
-var CURRENT_UNIVERSE = 'ksp_extra'
-var UNIVERSE = UNIVERSE || {}
+var CY = null
+var LAYOUT_SETTINGS = null
 
 // number of metres used for low orbit buffer (= radius + atmosphere + low_orbit_buffer)
 const LOW_ORBIT_BUFFER = 10000
-
-// some modes for aero calculations
-var AERO_MODES = [
-    {key: 'best', friendly: 'perfect', title: 'Optimal aero braking used on every manouvre'}, 
-    {key: 'entry_only', friendly: 'on entry', title: 'Only aero brake from orbit to surface'},
-    {key: 'no_braking', friendly: 'never', title: 'Never aero brake'},
-]
-var AERO_MODE = 0
-
-// some modes for assuming a mimimum dv on aerobraking
-var AEROBRAKE_DV = 0
-var AEROBRAKE_DVS = [0, 50, 100, 200, 400]
-
-var PLANE_CHANGE = true
-var GRAVITY_ASSIST = true
 
 // our start and end points
 var node_path = []
@@ -74,7 +58,7 @@ function get_data(){
     // we want to add the n^2 sibling-sibling crosslinks for every possible transfer between orbits at the same level
     // we can calculate the cost now, and search on it very rapidly later
     var children = {}
-    var universe = UNIVERSE[CURRENT_UNIVERSE]
+    var universe = UI.options.universe.current_obj
     var bodies = universe.bodies
     var edge_generators = []
     
@@ -334,51 +318,57 @@ function on_tap_handler(cy, evt){
 function init(){
     CY = cytoscape({
         container: $('#graph'),
-        elements: get_data(),
         selectionType: 'additive',
         autoungrabify: true,
         wheelSensitivity: 0.15,
     })
+        
+    LAYOUT_SETTINGS = [
+        {
+            key: 'spring',
+            data: {
+                name: 'cose',
+                gravity: 0,
+                numIter: 12000,
+                minTemp: 0.1,
+                coolingFactor: 0.98,
+                nodeRepulsion: function( node ){ return 100000; },
+                idealEdgeLength: function( edge ){ return 3},
+                edgeElasticity: function( edge ){ return 200*(edge.target().degree() + edge.source().degree()) },
+            },
+        },
+        {
+            key: 'round',
+            data: {
+                name: 'concentric',
+                startAngle: Math.PI * 9/8,
+                sweep: Math.PI * 6/8,
+                minNodeSpacing: 2,
+                equidistant: false,
+                concentric: function( node ){
+                    var x = search_graph(CY, CY.$(ROOT_NODE), node);
+                    return -x.path.length
+                },
+                levelWidth: function( nodes ){ return 3},
+            },
+        },
+        {
+            key: 'tree',
+            data: {
+                name: 'breadthfirst',
+                roots: CY.$(ROOT_NODE),
+            }
+        }
+    ]
     
-    console.log('cy init ok')
     CY.on('tap', 'node', function(e) {on_tap_handler(CY,e)})
     CY.style(UI.apply_cy_style(cytoscape.stylesheet()))
-    console.log('cy style ok')
-    
-    LAYOUT_SETTINGS = {
-        'spring': {
-            name: 'cose',
-            gravity: 0,
-            numIter: 12000,
-            minTemp: 0.1,
-            coolingFactor: 0.98,
-            nodeRepulsion: function( node ){ return 100000; },
-            idealEdgeLength: function( edge ){ return 3},
-            edgeElasticity: function( edge ){ return 200*(edge.target().degree() + edge.source().degree()) },
-        },
-        'round': {
-            name: 'concentric',
-            startAngle: Math.PI * 9/8,
-            sweep: Math.PI * 6/8,
-            minNodeSpacing: 2,
-            equidistant: false,
-            concentric: function( node ){
-                var x = search_graph(CY, CY.$(ROOT_NODE), node);
-                return -x.path.length
-            },
-            levelWidth: function( nodes ){ return 3},
-        },
-        'tree': {
-            name: 'breadthfirst',
-            roots: CY.$(ROOT_NODE),
-        }
-    }
-    LAYOUT = 1
-    LAYOUTS = _.keys(LAYOUT_SETTINGS)
     
     var default_node = CY.$(DEFAULT_NODE_SELECTOR)
     default_node.select()
     node_path.push(default_node)
     
     UI.init_buttons(CY)
+    
+    CY.add(get_data())
 }
