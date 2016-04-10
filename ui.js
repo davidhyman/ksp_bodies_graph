@@ -72,7 +72,7 @@ UI.init_button = function(container, item){
             item.index = (item.index + 1) % item.options.length
             UI.update_button_key(item)
             item.button.text(UI.get_button_text(item))
-            item.button.attr('title', item.help + '\n' + item.current_obj.title || '')
+            item.button.attr('title', item.help + '\n' + (item.current_obj.title || ''))
             UI.save_to_store()
             item.onclick(item)
         }
@@ -134,14 +134,15 @@ UI.init_buttons = function(CY){
                 search_and_render(CY)
             },
         },
-//        plane: {
-//            index: 0,
-//            name: 'Plane',
-//            help: 'Plane changes align your vessel with the planet rotation, but is often expensive',
-//            onclick: function(){
-//                search_and_render(CY)
-//            },
-//        },
+        plane_change: {
+            index: 0,
+            name: 'Plane',
+            options: [{key: false, friendly: 'off'}, {key: true, friendly: 'on'}],
+            help: 'Plane changes align your vessel with the planet rotation, but is often expensive',
+            onclick: function(){
+                search_and_render(CY)
+            },
+        },
         pin: {
             index: 0,
             name: 'Pin',
@@ -183,7 +184,6 @@ UI.save_to_store = function(){
     _.each(UI.options, function(v, k){
         persist[k] = v.index
     })
-    console.log(persist)
     window.localStorage.setItem('bodies_config', JSON.stringify(persist))    
 }
 

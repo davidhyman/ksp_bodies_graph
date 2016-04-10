@@ -173,6 +173,7 @@ function get_data(){
     })
     
     // uniqueify our edges and apply overrides
+    // TODO: update rather than replace with overrides
     var unique_edges = {}
     _.each(edge_generators.concat(universe.edge_overrides), function(item){
         unique_edges[[item.source, item.target].sort()] = item
@@ -212,7 +213,11 @@ function get_data(){
                 any_aerobrake: any_aerobrake,
                 dv: item.out,
                 plane_change: item.plane_change || 0,
+                
+                // ab modes
                 no_braking: no_braking,
+                entry_only: null,
+                best: null,
             }
         })
         // back
@@ -227,13 +232,17 @@ function get_data(){
                 any_aerobrake: any_aerobrake,
                 dv: item.back,
                 plane_change: item.plane_change || 0,
+                
+                // ab modes
                 no_braking: no_braking,
+                entry_only: null,
+                best: null,
             }
         })
     })
 
     var output = {nodes: _.values(nodes), edges: edges}
-    console.log('nodes and edges', output)
+    console.log('nodes and edges:', output)
     return output
 }
 
@@ -260,10 +269,19 @@ function render_results(container, start, end, results){
         if (pth.isNode()){return}
         var row = $('<tr>')
         row.append(
-            $('<td>', {html: pth.target().data('label_colour')[0].outerHTML}),
-            $('<td>', {text: pth.data('is_aerobrake') ? pth.data('no_braking') + ' A' : '', title: 'dv without aerobraking'}),
-//            $('<td>', {text: PLANE_CHANGE && pth.data('plane_change') ? pth.data('plane_change') + ' P' : '', title: 'extra dv for plane change'}),
-            $('<td>', {text: Math.round(pth.data(UI.options.aerobrake_dv_min.current_obj)), class:'dv_cells'})
+            $('<td>', {
+                html: pth.target().data('label_colour')[0].outerHTML
+            }),
+            $('<td>', {
+                text: pth.data('is_aerobrake') ? pth.data('no_braking') + ' A' : '',
+                title: 'dv without aerobraking'
+            }),
+            $('<td>', {
+                text: (UI.options.plane_change.current_key && pth.data('plane_change')) ? pth.data('plane_change') + ' P' : '', title: 'extra dv for plane change'
+            }),
+            $('<td>', {
+                text: Math.round(pth.data(UI.options.aerobrake.current_key)), class:'dv_cells'
+            })
         )
         tab.append(row)
     })

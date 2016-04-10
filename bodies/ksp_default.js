@@ -14,7 +14,6 @@ UNIVERSE.ksp_default = {
         {source:'minmus_orbit', target:'minmus_surface', out: 180, back: DV_MATCH},
         {source:'kerbol_orbit', target:'kerbol_surface', out: 67000, back: DV_MATCH},
         {source:'duna_orbit', target:'duna_surface', out: AEROBRAKE, back: 1450},
-        {source:'ike_orbit', target:'ike_surface', out: 390, back: DV_MATCH},
     ],
     // explicitly provide information for tangible nodes
     bodies: [
@@ -96,6 +95,7 @@ UNIVERSE.ksp_extra =  {
     friendly: 'Extra',
     edge_overrides: [
         ...UNIVERSE.ksp_default.edge_overrides,
+        {source:'ike_orbit', target:'ike_surface', out: 390, back: DV_MATCH},
     ],
     bodies: [
         ...UNIVERSE.ksp_default.bodies, // everything in ksp_default, plus these:
