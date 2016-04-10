@@ -20,15 +20,25 @@
 <div id="content">
     <div id="wat" class="black_transparent">
         <h1>KSP delta v interactive map</h1>
-        This tool will sum the delta v requirements to get from Kerbin, to another body and back again.
-        Beware! Currently 'crossing branches' e.g. duna->jool will overestimate, because it doesn't model the common gravity wells,
-        and routes everything through Kerbin's SOI.
-        <ol>
+        This tool will estimate the delta v requirements to get around the Kerbal Universe.
+        <br>
+        Values you can tweak:
+        <ul>
         <li>Aero braking: always, never, or only on entry (orbit -> surface).</li>
         <li>Min braking dv: a flat rate cost for using burns to control your aero braking.</li>
         <li>Plane changes: if you want to land on planetary equators, instead of 'anywhere', you'll want to take this into account.</li>
         <li>Pin: pin your start location. Click to unpin, pick a route and then pin again - now you can select destinations with a single click.</li>
-        </ol>
+        </ul>
+        
+        Non-tweakable assumptions and their liability to over (+) or under (-) estimate:
+        <ul>
+        <li>(-) Some burns are assumed not to be circularised e.g. child soi -> parent orbit, child soi -> parent soi.</li>
+        <li>(-+) Calculations use simple semi-major axis (circular orbits).</li>
+        <li>(-) Plane changes are not calculated (but can be provided by specific overrides).</li>
+        <li>(+) There's a small percentage buffer on non-aero landings to help the numbers line up with DV maps.</li>
+        </ul>
+        For the most part, based on the tests in comparison to other maps and calculators, you are more likely to have a slight overestimate (up to ~10% at most) than any significant underestimate. If in any doubt whatsoever, add MOAR BOOSTERS.
+        <br>
         <div id="close_help" class="button noselect">close help</div>
     </div>
     <div id="controls"></div>
