@@ -37,47 +37,6 @@ var GRAVITY_ASSIST = true
 var node_path = []
 var pinned = null
 
-function orbit_to_surface(item){
-    // speed of the planet surface - we must match this or be destroyed
-    var surface_velocity = item.rotational_period ? 2*Math.PI / item.rotational_period : 0
-    var orbit_at_surface = Math.sqrt(item.mass * G / item.radius)
-    var hm = hohmann(item.mass, item.radius, item.orbit).total
-    return (hm + orbit_at_surface - surface_velocity) * SUICIDE_BURN_MARGIN
-}
-
-function hohmann(mass, start, target){
-    // see https://en.wikipedia.org/wiki/Hohmann_transfer_orbit
-    var ap_radius = Math.max(start, target)
-    var pe_radius = Math.min(start, target)
-    var output = {
-        enter: hohmann_enter(mass, pe_radius, ap_radius),
-        exit: hohmann_exit(mass, pe_radius, ap_radius)
-    }
-    output.total = output.enter + output.exit
-    //console.log('hohmann for ', mass, start, target, output)
-    return output
-}
-
-function hohmann_enter(mass, start, target){
-    return Math.abs(
-        Math.sqrt(mass * G / start) 
-        * (
-            Math.sqrt(2 * target / (start + target))
-            - 1
-        )
-    )
-}
-
-function hohmann_exit(mass, start, target){
-    return Math.abs(
-        Math.sqrt(mass * G / target) 
-        * (
-            1
-            - Math.sqrt(2 * start / (start + target))
-        )
-    )
-}
-
 function system_name_to_node(planet_name){
     // ensure planets have their default state
     // kerbin -> 'kerbin_orbit'
@@ -133,7 +92,7 @@ function get_data(){
         edge_generators.push({
             source: item.name + '_surface',
             target: item.name + '_orbit',
-            out: orbit_to_surface(this_data),
+            out: M.orbit_to_surface(this_data),
             back: DV_MATCH
         })
         
@@ -141,7 +100,7 @@ function get_data(){
         edge_generators.push({
             source: item.name + '_orbit',
             target: item.name + '_soi',
-            out: hohmann(
+            out: M.hohmann(
                 this_data.mass,
                 this_data.orbit,
                 this_data.soi
@@ -164,7 +123,7 @@ function get_data(){
             edge_generators.push({
                 source: child + '_soi',
                 target: nodes[parent_id].data.name + '_orbit',
-                out: hohmann_enter(
+                out: M.hohmann_enter(
                     nodes[parent_id].data.mass,
                     child_node.data.sma - child_node.data.soi,
                     nodes[parent_id].data.orbit                 
@@ -176,7 +135,7 @@ function get_data(){
             edge_generators.push({
                 source: child + '_soi',
                 target: nodes[parent_id].data.name + '_soi',
-                out: hohmann_enter(
+                out: M.hohmann_enter(
                     nodes[parent_id].data.mass,
                     child_node.data.sma + child_node.data.soi,
                     nodes[parent_id].data.soi                
@@ -203,7 +162,7 @@ function get_data(){
                 edge_generators.push({
                     source: child+'_soi',
                     target: other_child+'_soi',
-                    out: hohmann(
+                    out: M.hohmann(
                         nodes[parent_id].data.mass,
                         start,
                         end
@@ -217,7 +176,7 @@ function get_data(){
                 edge_generators.push({
                     source: child+'_orbit',
                     target: other_child+'_soi',
-                    out: hohmann(
+                    out: M.hohmann(
                         nodes[parent_id].data.mass,
                         child_node.data.sma,
                         other_child_node.data.sma
@@ -295,31 +254,15 @@ function get_data(){
     return output
 }
 
-function calc_dv(edge, force_raw){
-    var edge_data = edge.data()
-    // substitute our assumed minimum dv value for aerobraking manouvres
-    var aero_best = edge_data['is_aerobrake'] ? AEROBRAKE_DVS[AEROBRAKE_DV] : edge.data('dv')
-    
-    // save our calculations on the edges so we can refer to them later
-    edge_data['best'] = aero_best
-    edge_data['entry_only'] = edge.target().data('state')=='surface' ? aero_best : edge_data['no_braking']
-    var dv = edge_data[AERO_MODES[AERO_MODE].key]
-    if (PLANE_CHANGE){
-        dv += edge_data['plane_change']
-    }
-    if (!force_raw && !GRAVITY_ASSIST && (edge.target().data('system') != edge.source().data('system'))){
-        dv += 2e6 // weight SOI transitions heavily
-    }
-    return dv
-}
+
 
 function search_graph(cy, source, target){
-    var dij = cy.elements().dijkstra(source, calc_dv, true)
+    var dij = cy.elements().dijkstra(source, M.calc_dv, true)
     var path = dij.pathTo(target)
     return {
         weight: dij.distanceTo(target),
         path: path,
-        total: _.reduce(path, function(memo, item){ return item.isNode() ? memo : memo + calc_dv(item, true); }, 0),
+        total: _.reduce(path, function(memo, item){ return item.isNode() ? memo : memo + M.calc_dv(item, true); }, 0),
     }
 }
 
@@ -604,8 +547,8 @@ function test(){
         )
     })
     console.log(
-        _.reduce(c, function(memo, num){ return Math.max(memo, num); }, 0),
-        _.reduce(c, function(memo, num){ return memo + num; }, 0),
-        _.reduce(c, function(memo, num){ return memo + (num * num); }, 0)
+        'max abs', _.reduce(c, function(memo, num){ return Math.max(memo, num); }, 0),
+        'total', _.reduce(c, function(memo, num){ return memo + num; }, 0),
+        'sum squares', _.reduce(c, function(memo, num){ return memo + (num * num); }, 0)
     )
 }
