@@ -20,7 +20,7 @@
 <div id="content">
     <div id="wat" class="black_transparent">
         <h1>KSP delta v interactive map</h1>
-        This tool will estimate the delta v requirements to get around the Kerbal Universe. Right now this uses simple Hohmann transfers, and some overrides for planets with atmosphere.
+        This tool will estimate the delta v requirements to get around the Kerbal Universe. Right now this uses simple Hohmann transfers, and some overrides for planets with atmosphere. All planetary data taken from the wiki.
         <p>
         Pinning: Click to unpin, pick a route and then pin again - now you can select destinations with a single click.
         </p>
@@ -36,6 +36,7 @@
         <li>(-+) Calculations use simple semi-major axis (circular orbits).</li>
         <li>(-) Plane changes are not calculated (but can be provided by specific overrides).</li>
         <li>(+) There's a small percentage buffer on non-aero landings to help the numbers line up with DV maps.</li>
+        <li>(-+) Planetary landings use the approximate equatorial radius. So polar landings may be more expensive, and landing on the top of mountains slightly cheaper.</li>
         </ul>
         For the most part, based on the tests in comparison to other maps and calculators, you are more likely to have a slight overestimate (up to ~10% at most) than any significant underestimate. If in any doubt whatsoever, add MOAR BOOSTERS.
         <br>

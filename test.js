@@ -59,7 +59,12 @@ function test(){
     
     var c = []
     _.each(tests, function(params){
-        var t = search_graph(CY, CY.$(params.from), CY.$(params.to))
+        try {
+            var t = search_graph(CY, CY.$(params.from), CY.$(params.to))
+        } catch(e) {
+            console.log('fail', params, e)
+            return
+        }
         var cost = t.total
         var p = Math.round(100 * ((cost - params.expect) / cost))
         c.push(Math.abs(p))
@@ -71,6 +76,7 @@ function test(){
     console.log(
         '% sums: max', _.reduce(c, function(memo, num){ return Math.max(memo, num); }, 0),
         'total', _.reduce(c, function(memo, num){ return memo + num; }, 0),
-        'rms', Math.round(1000*Math.sqrt(_.reduce(c, function(memo, num){ return memo + (num * num); }, 0)))/1000
+        'rms', Math.round(1000*Math.sqrt(_.reduce(c, function(memo, num){ return memo + (num * num); }, 0)))/1000,
+        ', ran', c.length
     )
 }
